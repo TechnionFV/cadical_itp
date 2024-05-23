@@ -1,11 +1,12 @@
 #include "internal.hpp"
+#include <cstdint>
 
 namespace CaDiCaL {
 
 External::External (Internal *i)
     : internal (i), max_var (0), vsize (0), extended (false),
-      terminator (0), learner (0), propagator (0), solution (0),
-      vars (max_var) {
+      concluded (false), terminator (0), learner (0), propagator (0),
+      solution (0), vars (max_var) {
   assert (internal);
   assert (!internal->external);
   internal->external = this;
@@ -81,6 +82,11 @@ void External::reset_assumptions () {
   internal->reset_assumptions ();
 }
 
+void External::reset_concluded () {
+  concluded = false;
+  internal->reset_concluded ();
+}
+
 void External::reset_constraint () {
   constraint.clear ();
   internal->reset_constraint ();
@@ -154,7 +160,7 @@ void External::add (int elit) {
   // when the proof is printed during add_original_lit (0)
   if (elit && internal->proof) {
     eclause.push_back (elit);
-    if (internal->opts.lrat && !internal->opts.lratexternal) {
+    if (internal->lrat) {
       // actually find unit of -elit (flips elit < 0)
       unsigned eidx = (elit > 0) + 2u * (unsigned) abs (elit);
       assert ((size_t) eidx < ext_units.size ());
@@ -167,8 +173,7 @@ void External::add (int elit) {
     }
   }
 
-  if (!elit && internal->proof && internal->opts.lrat &&
-      !internal->opts.lratexternal) {
+  if (!elit && internal->proof && internal->lrat) {
     for (const auto &elit : eclause) {
       ext_flags[abs (elit)] = false;
     }
@@ -186,6 +191,8 @@ void External::add (int elit) {
 void External::assume (int elit) {
   assert (elit);
   reset_extended ();
+  if (internal->proof)
+    internal->proof->add_assumption (elit);
   assumptions.push_back (elit);
   const int ilit = internalize (elit);
   assert (ilit);
@@ -249,11 +256,14 @@ void External::constrain (int elit) {
   }
   assert (elit != INT_MIN);
   reset_extended ();
-  constraint.push_back (elit);
   const int ilit = internalize (elit);
   assert (!elit == !ilit);
   if (elit)
     LOG ("adding external %d as internal %d to constraint", elit, ilit);
+  else if (!elit && internal->proof) {
+    internal->proof->add_constraint (constraint);
+  }
+  constraint.push_back (elit);
   internal->constrain (ilit);
 }
 
@@ -264,17 +274,7 @@ bool External::failed_constraint () {
 void External::phase (int elit) {
   assert (elit);
   assert (elit != INT_MIN);
-  int eidx = abs (elit);
-  if (eidx > max_var) {
-  UNUSED:
-    LOG ("forcing phase of unused external %d ignored", elit);
-    return;
-  }
-  int ilit = e2i[eidx];
-  if (!ilit)
-    goto UNUSED;
-  if (elit < 0)
-    ilit = -ilit;
+  const int ilit = internalize (elit);
   internal->phase (ilit);
 }
 
@@ -382,7 +382,14 @@ void External::reset_observed_vars () {
   // Shouldn't be called if there is no connected propagator
   assert (propagator);
   reset_extended ();
-  assert ((size_t) max_var + 1 == is_observed.size ());
+
+  internal->notified = 0;
+  LOG ("reset notified counter to 0");
+
+  if (!is_observed.size ())
+    return;
+
+  assert (!max_var || (size_t) max_var + 1 == is_observed.size ());
 
   for (auto elit : vars) {
     int eidx = abs (elit);
@@ -395,8 +402,6 @@ void External::reset_observed_vars () {
       melt (elit);
     }
   }
-  internal->notified = 0;
-  LOG ("reset notified counter to 0");
 }
 
 bool External::observed (int elit) {
@@ -662,8 +667,7 @@ void External::check_failing () {
   if (internal->opts.log)
     checker->set ("log", true);
 #endif
-  for (const auto lit : original)
-    checker->add (lit);
+
   for (const auto lit : assumptions) {
     if (!failed (lit))
       continue;
@@ -677,6 +681,12 @@ void External::check_failing () {
       checker->add (lit);
   } else if (constraint.size ())
     LOG (constraint, "constraint satisfied and ignored");
+
+  // Add original clauses as last step, failing () and failed_constraint ()
+  // might add more external clauses (due to lazy explanation)
+  for (const auto lit : original)
+    checker->add (lit);
+
   int res = checker->solve ();
   if (res != 20)
     FATAL ("failed assumptions do not form a core");
@@ -761,7 +771,6 @@ bool External::traverse_all_non_frozen_units_as_witnesses (
     return true;
 
   vector<int> clause_and_witness;
-
   for (auto idx : vars) {
     if (frozen (idx))
       continue;
@@ -769,8 +778,14 @@ bool External::traverse_all_non_frozen_units_as_witnesses (
     if (!tmp)
       continue;
     int unit = tmp < 0 ? -idx : idx;
+    const int ilit = e2i[idx] * (tmp < 0 ? -1 : 1);
+    // heurstically add + max_var to the id to avoid reusing ids
+    const uint64_t id = internal->opts.lrat
+                            ? internal->unit_clauses[internal->vlit (ilit)]
+                            : 1;
+    assert (id);
     clause_and_witness.push_back (unit);
-    if (!it.witness (clause_and_witness, clause_and_witness))
+    if (!it.witness (clause_and_witness, clause_and_witness, id + max_var))
       return false;
     clause_and_witness.clear ();
   }

@@ -9,10 +9,11 @@ namespace CaDiCaL {
 
 inline void Internal::unassign (int lit) {
   assert (val (lit) > 0);
-  const int idx = vidx (lit);
-  vals[idx] = 0;
-  vals[-idx] = 0;
+  set_val (lit, 0);
+
+  int idx = vidx (lit);
   LOG ("unassign %d @ %d", lit, var (idx).level);
+  num_assigned--;
 
   // In the standard EVSIDS variable decision heuristic of MiniSAT, we need
   // to push variables which become unassigned back to the heap.
@@ -81,6 +82,8 @@ void Internal::backtrack (int new_level) {
   stats.backtracks++;
   update_target_and_best ();
 
+  assert (num_assigned == trail.size ());
+
   const size_t assigned = control[new_level + 1].trail;
 
   LOG ("backtracking to decision level %d with decision %d and trail %zd",
@@ -124,9 +127,7 @@ void Internal::backtrack (int new_level) {
 #endif
       trail[j] = lit;
       v.trail = j++;
-#ifdef LOGGING
       reassigned++;
-#endif
     }
   }
   trail.resize (j);
@@ -151,9 +152,13 @@ void Internal::backtrack (int new_level) {
 
   control.resize (new_level + 1);
   level = new_level;
-
-  if (!level)
-    did_external_prop = false;
+  if (tainted_literal) {
+    assert (opts.ilb);
+    if (!val (tainted_literal)) {
+      tainted_literal = 0;
+    }
+  }
+  assert (num_assigned == trail.size ());
 }
 
 } // namespace CaDiCaL

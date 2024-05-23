@@ -7,10 +7,7 @@ namespace CaDiCaL {
 
 /*------------------------------------------------------------------------*/
 
-// This constructs lrat-style proof chains. Enabled by 'opts.checkprooflrat'
-// (requires 'opts.check' and 'opts.checkproof'). The main advantage of this
-// currently is that we can stream out frat proofs (enabled by 'opts.lrat')
-
+// This constructs lrat-style proof chains. Enabled by 'opts.externallrat'
 // in essence this implements the same propagation routine as the DRUP
 // checker but also stores the reason for each assignment. The proof chain
 // is then recreated from that.
@@ -73,7 +70,7 @@ class LratBuilder {
   vector<signed char> checked_lits; // this is implemented same as marks
   LratBuilderClause *conflict;
 
-  vector<uint64_t> chain; // lrat style proof chain
+  vector<uint64_t> chain; // LRAT style proof chain
   vector<uint64_t> reverse_chain;
   vector<uint64_t> inconsistent_chain; // store proof to reuse
   unsigned unjustified;                // number of lits to justify

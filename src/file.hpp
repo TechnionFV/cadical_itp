@@ -2,6 +2,7 @@
 #define _file_hpp_INCLUDED
 
 #include <cassert>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
@@ -31,9 +32,7 @@ struct Internal;
 
 class File {
 
-#ifndef QUIET
   Internal *internal;
-#endif
 #if !defined(QUIET) || !defined(NDEBUG)
   bool writing;
 #endif
@@ -41,7 +40,7 @@ class File {
   int close_file; // need to close file (1=fclose, 2=pclose, 3=pipe)
   int child_pid;
   FILE *file;
-  const char *_name;
+  char *_name;
   uint64_t _lineno;
   uint64_t _bytes;
 
@@ -68,6 +67,8 @@ public:
   static bool exists (const char *path);       // file exists?
   static bool writable (const char *path);     // can write to that file?
   static size_t size (const char *path);       // file size in bytes
+
+  bool piping (); // Is opened file a pipe?
 
   // Does the file match the file type signature.
   //
@@ -195,6 +196,7 @@ public:
   uint64_t lineno () const { return _lineno; }
   uint64_t bytes () const { return _bytes; }
 
+  void connect_internal (Internal *i) { internal = i; }
   bool closed () { return !file; }
 
   void close (bool print = false);

@@ -48,13 +48,14 @@ namespace CaDiCaL {
 /*------------------------------------------------------------------------*/
 
 void External::restore_clause (const vector<int>::const_iterator &begin,
-                               const vector<int>::const_iterator &end) {
-  LOG (begin, end, "restoring external clause");
+                               const vector<int>::const_iterator &end,
+                               const uint64_t id) {
+  LOG (begin, end, "restoring external clause[%" PRIu64 "]", id);
   assert (eclause.empty ());
+  assert (id);
   for (auto p = begin; p != end; p++) {
     eclause.push_back (*p);
-    if (internal->proof && internal->opts.lrat &&
-        !internal->opts.lratexternal) {
+    if (internal->proof && internal->lrat) {
       const auto &elit = *p;
       unsigned eidx = (elit > 0) + 2u * (unsigned) abs (elit);
       assert ((size_t) eidx < ext_units.size ());
@@ -66,16 +67,14 @@ void External::restore_clause (const vector<int>::const_iterator &begin,
       }
     }
     int ilit = internalize (*p);
-    internal->add_original_lit (ilit);
-    internal->stats.restoredlits++;
+    internal->add_original_lit (ilit), internal->stats.restoredlits++;
   }
-  if (internal->proof && internal->opts.lrat &&
-      !internal->opts.lratexternal) {
+  if (internal->proof && internal->lrat) {
     for (const auto &elit : eclause) {
       ext_flags[abs (elit)] = false;
     }
   }
-  internal->add_original_lit (0);
+  internal->finish_added_clause_with_id (id, true);
   eclause.clear ();
   internal->stats.restored++;
 }
@@ -142,6 +141,15 @@ void External::restore_clauses () {
       assert (p != end_of_extension);
     }
 
+    // now copy the id of the clause
+    const uint64_t id = ((uint64_t) (*p) << 32) + (uint64_t) * (p + 1);
+    LOG ("id is %" PRIu64, id);
+    *q++ = *p++;
+    *q++ = *p++;
+    assert (id);
+    assert (!*p);
+    *q++ = *p++;
+
     // Now find 'end_of_clause' (clause starts at 'p') and at the same time
     // figure out whether the clause is actually root level satisfied.
     //
@@ -152,6 +160,7 @@ void External::restore_clauses () {
         satisfied = elit;
       end_of_clause++;
     }
+    assert (id);
 
     // Do not apply our 'FLUSH' rule to remove satisfied (implied) clauses
     // if the corresponding option is set simply by resetting 'satisfied'.
@@ -170,7 +179,7 @@ void External::restore_clauses () {
              satisfied);
         clauses.satisfied++;
       } else {
-        restore_clause (p, end_of_clause); // Might taint literals.
+        restore_clause (p, end_of_clause, id); // Might taint literals.
         clauses.restored++;
       }
 
@@ -237,6 +246,14 @@ void External::restore_clauses () {
     while (*--p)
       assert (p != begin_of_extension);
     int elit;
+    assert (p != begin_of_extension);
+    --p;
+    assert (p != begin_of_extension);
+    assert (*p || *(p - 1));
+    --p;
+    assert (p != begin_of_extension);
+    assert (!*p);
+    --p;
     assert (p != begin_of_extension);
     while ((elit = *--p)) {
       mark (witness, elit);

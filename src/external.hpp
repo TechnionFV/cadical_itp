@@ -64,7 +64,7 @@ struct External {
   vector<int> constraint;  // External constraint. Terminated by zero.
 
   vector<uint64_t>
-      ext_units; // External units. Needed to compute lrat for eclause
+      ext_units; // External units. Needed to compute LRAT for eclause
   vector<bool> ext_flags; // to avoid duplicate units
   vector<int> eclause;    // External version of original input clause.
   // The extension stack for reconstructing complete satisfying assignments
@@ -74,7 +74,8 @@ struct External {
   // external literals on the 'extension' stack after mapping the
   // internal literals given as arguments with 'externalize'.
 
-  bool extended;         // Have been extended.
+  bool extended; // Have been extended.
+  bool concluded;
   vector<int> extension; // Solution reconstruction extension stack.
 
   vector<bool> witness; // Literal witness on extension stack.
@@ -163,12 +164,14 @@ struct External {
 
   void push_clause_on_extension_stack (Clause *);
   void push_clause_on_extension_stack (Clause *, int witness);
-  void push_binary_clause_on_extension_stack (int witness, int other);
+  void push_binary_clause_on_extension_stack (uint64_t id, int witness,
+                                              int other);
 
   // The main 'extend' function which extends an internal assignment to an
   // external assignment using the extension stack (and sets 'extended').
   //
   void extend ();
+  void conclude_sat ();
 
   /*----------------------------------------------------------------------*/
 
@@ -203,11 +206,14 @@ struct External {
   /*----------------------------------------------------------------------*/
 
   void push_external_clause_and_witness_on_extension_stack (
-      const vector<int> &clause, const vector<int> &witness);
+      const vector<int> &clause, const vector<int> &witness, uint64_t id);
+
+  void push_id_on_extension_stack (uint64_t id);
 
   // Restore a clause, which was pushed on the extension stack.
   void restore_clause (const vector<int>::const_iterator &begin,
-                       const vector<int>::const_iterator &end);
+                       const vector<int>::const_iterator &end,
+                       const uint64_t id);
 
   void restore_clauses ();
 
@@ -253,6 +259,12 @@ struct External {
   // 'transition_to_unknown_state' in API calls in 'solver.cpp'.
 
   void reset_assumptions ();
+
+  // similarily to 'failed', 'conclude' needs to know about failing
+  // assumptions and therefore needs to be reset when leaving the
+  // 'UNSATISFIED' state.
+  //
+  void reset_concluded ();
 
   // Similarly a valid external assignment obtained through 'extend' has to
   // be reset at each point it risks to become invalid.  This is done
