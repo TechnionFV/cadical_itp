@@ -346,6 +346,8 @@ struct Internal {
 
   int64_t irredundant () const { return stats.current.irredundant; }
 
+  int64_t conflicts () const { return stats.conflicts; }
+
   double clause_variable_ratio () const {
     return relative (irredundant (), active ());
   }

@@ -20,6 +20,8 @@ decide.cpp
 decompose.cpp
 deduplicate.cpp
 drattracer.cpp
+drup2itptypes.cpp
+drup2itp.cpp
 elim.cpp
 ema.cpp
 extend.cpp
