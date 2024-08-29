@@ -12,9 +12,17 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace DRUP2ITP {
+
+class ItpClauseIterator {
+public:
+  virtual ~ItpClauseIterator () {}
+  virtual bool clause (const std::vector<int> &clause, int partition) = 0;
+  virtual bool assume (int lit) = 0;
+};
 
 using namespace std;
 using CaDiCaL::ConclusionType;
@@ -29,6 +37,7 @@ class MiniTracer {
 public:
   MiniTracer (const vector<Range> &r, const vector<Clause *> &s)
       : ranges (r), reasons (s) {}
+
   const Range &range (int lit) const {
     assert (lit);
     unsigned idx = abs (lit);
@@ -130,13 +139,12 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   void analyze_core ();
   void mark_core_trail_antecedents ();
   void append (uint64_t id, const vector<int> &, bool);
-  void traverse_core (CaDiCaL::ClauseIterator &);
+  void traverse_core (ItpClauseIterator &);
   void mark_top_conflict ();
   bool trim ();
   void restore_trail (bool original = false, bool core = false);
   void label_root_level (ResolutionProofIterator &, int &);
   void label_final (ResolutionProofIterator &, Clause *);
-  void label_final_assumptions (ResolutionProofIterator &);
   bool skip_lemma (Clause *);
   bool clauses_are_identical (Clause *, const vector<int> &);
   bool colorize (ResolutionProofIterator &, Clause *, unsigned,
@@ -179,16 +187,16 @@ public:
   void conclude_unsat (ConclusionType, const vector<uint64_t> &) override;
   // void conclude_sat (const vector<int> &) override;
   void print_stats () override;
-  bool trim (CaDiCaL::ClauseIterator *, bool undo = true);
+  bool trim (ItpClauseIterator *, bool undo = true);
   void set_current_partition (unsigned);
   unsigned get_current_partition () const;
   unsigned get_maximal_partition () const;
-  bool replay (ResolutionProofIterator &, bool undo = true);
+  bool replay (ResolutionProofIterator &, bool incremental = true);
   bool set_reorder_proof (bool);
-  bool supported_option (const char *) const;
   bool consistent () const;
   void dump (const char *);
   MiniTracer mini_tracer () const;
+  void connect_to (Solver &);
 };
 
 } // namespace DRUP2ITP

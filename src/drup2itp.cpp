@@ -139,10 +139,12 @@ void Drup2Itp::enlarge_marks (unsigned idx) {
     size *= 2;
   assert (size >= marks.size ());
   marks.resize (2 * size);
+  assert (vars_range.size () == trail_range.size ());
   while (trail_range.size () < 2 * size) {
     trail_range.push_back (Range ());
     vars_range.push_back (Range ());
   }
+  assert (vars_range.size () == trail_range.size ());
 }
 
 signed char Drup2Itp::marked (int lit) const {
@@ -422,6 +424,8 @@ void Drup2Itp::init_trail_and_reasons () {
     }
     assert (reasons[idx]);
     assert (reasons[idx]->literals[0] == lit);
+    if (reasons[idx]->size == 1 && !reasons[idx]->original)
+      reasons[idx]->range = trail_range[idx];
   }
   next_to_propagate = trail.size ();
   top_root_trail = trail.size () - 1;
@@ -632,31 +636,22 @@ void Drup2Itp::mark_top_conflict () {
   default:
     assert (false && "should not reach here");
   }
-  vector<Clause *> discarded;
-  auto j = assumption_clauses.begin ();
-  auto end = assumption_clauses.end ();
-  for (auto i = j; i != end; i++) {
-    Clause *c = *i;
+  for (Clause *c : assumption_clauses) {
     bool root_level_satisfied = false;
     for (int lit : *c)
       if (val (lit) > 0) {
         root_level_satisfied = true;
         break;
       }
-    if (root_level_satisfied) {
-      discarded.push_back (c);
+    if (root_level_satisfied)
       continue;
-    }
-    *j++ = c;
     c->core = true;
     proof.push_back (c);
     stats.derived++;
     proof.push_back (c);
     stats.deleted++;
   }
-  assumption_clauses.resize (j - assumption_clauses.begin ());
-  for (Clause *c : discarded)
-    assumption_clauses.push_back (c);
+  assumption_clauses.clear (); // they are part of the proof now
 }
 
 bool Drup2Itp::trim () {
@@ -664,7 +659,7 @@ bool Drup2Itp::trim () {
   stats.trims++;
   mark_top_conflict ();
 
-  // // 'trail_sz' is used for lazy shrinking of the trail.
+  // 'trail_sz' is used for lazy shrinking of the trail.
   unsigned trail_sz = trail.size ();
 
   // Main trimming loop
@@ -691,7 +686,7 @@ bool Drup2Itp::trim () {
   return true;
 }
 
-bool Drup2Itp::trim (CaDiCaL::ClauseIterator *it, bool undo) {
+bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
 
   if (empty_original_clause || !init_data_structures ())
     return true;
@@ -709,7 +704,7 @@ bool Drup2Itp::trim (CaDiCaL::ClauseIterator *it, bool undo) {
     for (uint64_t i = 0; i < size_clauses; i++)
       for (Clause *c = clauses[i]; c; c = c->next)
         c->core = false;
-    restore_trail ();
+    // // restore_trail ();
   }
 
   return true;
@@ -769,43 +764,6 @@ void Drup2Itp::label_final (ResolutionProofIterator &it, Clause *source) {
   for (int lit : *source)
     it.chain.append (-lit, 0);
   it.chain_resolution (/*, 0*/);
-}
-
-void Drup2Itp::label_final_assumptions (ResolutionProofIterator &it) {
-  // fprintf (stderr, "assumptions: ");
-  // for (int lit : assumptions)
-  //   fprintf (stderr, "%d%s ", lit, external->failed (lit) ? "*" : "");
-  // fputc ('\n', stderr);
-  // fprintf (stderr, "assumption_clauses: ");
-  // for (Clause *c : assumption_clauses) {
-  //   for (int lit : *c)
-  //     fprintf (stderr, "%d ", lit);
-  //   fputc ('\n', stderr);
-  // }
-
-  int num_failed = 0, failed = 0;
-  for (int lit : assumptions)
-    if (external->failed (lit)) {
-      failed = lit;
-      num_failed++;
-    }
-  if (num_failed == 1) {
-    Clause *r = reasons[abs (failed)];
-    assert (r && !r->range.undef ());
-    label_final (it, r);
-    return;
-  } else {
-    assert (num_failed > 1);
-    for (Clause *c : assumption_clauses)
-      if (c->size == num_failed) {
-        for (int lit : *c) {
-          assert (abs (lit) < trail_range.size ());
-          c->range.join (trail_range[abs (lit)]);
-        }
-        label_final (it, c);
-        return;
-      }
-  }
 }
 
 bool Drup2Itp::skip_lemma (Clause *c) {
@@ -959,10 +917,12 @@ unsigned Drup2Itp::get_current_partition () const { return current_part; }
 unsigned Drup2Itp::get_maximal_partition () const { return maximal_part; }
 
 // Post-condition: formula has been already trimmed.
-bool Drup2Itp::replay (ResolutionProofIterator &it, bool undo) {
+bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
 
   if (empty_original_clause)
     return true;
+
+  const auto max_id = internal->clause_id;
 
   restore_trail (true /*original*/, true /*core*/);
 
@@ -972,13 +932,10 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool undo) {
   label_root_level (it, trail_label_idx);
 
   if (conflict) {
-    assert (0);
     // Initial data base is inconsistent.
     label_final (it, conflict);
     return true;
   }
-
-  assert (assumption_clauses.size () == 1);
 
   for (Clause *c : proof) {
 
@@ -1013,11 +970,6 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool undo) {
 
     while (part <= maximal_part) {
       learnt.clear (), range.reset ();
-      // Attempt to apply only resolutions that are in the color partition
-      // as 'conflict'.
-      // Clauses from earlier partitions are recursively colorized by
-      // attempting to turn them into shared derived clauses. Clauses from
-      // later partitions are ignored.
       learned = colorize (it, p, part, learnt, range);
 
       if (!learned) {
@@ -1060,8 +1012,6 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool undo) {
       new_proof.push_back (p);
       c->core = false;
 
-      if (c == assumption_clauses[0])
-        assumption_clauses[0] = p;
       it.chain_resolution (p);
 
       if (part > maximal_part) {
@@ -1099,24 +1049,47 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool undo) {
     }
   }
 
-  label_final_assumptions (it);
+  if (!conflict) {
+    assert (proof.size ());
+    label_final (it, proof.back ());
+  }
 
 #if DNDEBUG
   for (Clause *c : new_proof)
     assert (c && c->core && !c->garbage);
 #endif
 
-  // TODO: Use the new proof
-  proof = new_proof;
+  if (incremental) {
+    // Currently, we don't want to manupulate the internal solver's
+    // data base. Therefore, we undo the effects of the replay.
+    // TODO: Clean the proof post replay
+    for (Clause *c : proof)
+      c->garbage = true;
 
-  if (undo) {
-    assumption_clauses.clear ();
-    // For application where only core is needed
+    for (Clause *c : proof)
+      if (!c->original)
+        c->garbage = !c->garbage;
+
+    vector<Clause *> to_delete;
     for (uint64_t i = 0; i < size_clauses; i++)
-      for (Clause *c = clauses[i]; c; c = c->next)
+      for (Clause *c = clauses[i]; c; c = c->next) {
         c->core = false;
-    flush_watches ();
+        assert (!c->original || c->range.singleton ());
+        if (!c->original)
+          c->range.reset ();
+        if (max_id < c->id) {
+          if (!c->garbage)
+            detach_clause (c);
+          to_delete.push_back (c);
+        }
+      }
+
+    for (int i = 0; i < to_delete.size (); i++) {
+      Clause *c = to_delete[i];
+      delete_clause (c);
+    }
   }
+
   return true;
 }
 
@@ -1138,10 +1111,10 @@ void Drup2Itp::restore_trail (bool original, bool core) {
       int unit = c->literals[0];
       if (val (unit))
         continue;
-      if (c == top_conflict) {
-        // This is a falsified original unit.
-        continue;
-      }
+      // if (c == top_conflict) {
+      //   // This is a falsified original unit.
+      //   continue;
+      // }
       assign (unit, c);
       propagate (core);
     }
@@ -1149,30 +1122,6 @@ void Drup2Itp::restore_trail (bool original, bool core) {
   // we repropagate all units on trail to restore all of the trail.
   next_to_propagate = 0;
   propagate (core);
-}
-
-static bool starts_with_suffix (const char *str, const char *suffix) {
-  string str_str (str);
-  string suffix_str (suffix);
-  if (str_str.length () < suffix_str.length ())
-    return false;
-  return str_str.compare (0, suffix_str.length (), suffix_str) == 0;
-}
-
-bool Drup2Itp::supported_option (const char *arg) const {
-  if (starts_with_suffix (arg, "check"))
-    return false; // we write to internal->clause_id++
-  if (starts_with_suffix (arg, "ilbassumptions"))
-    return false;
-  if (starts_with_suffix (arg, "compact"))
-    return false;
-  if (starts_with_suffix (arg, "block"))
-    return false;
-  if (starts_with_suffix (arg, "cover"))
-    return false;
-  if (starts_with_suffix (arg, "probe"))
-    return false;
-  return true;
 }
 
 void Drup2Itp::append (uint64_t id, const vector<int> &literals,
@@ -1203,7 +1152,7 @@ void Drup2Itp::append (uint64_t id, const vector<int> &literals,
   }
 }
 
-void Drup2Itp::traverse_core (CaDiCaL::ClauseIterator &it) {
+void Drup2Itp::traverse_core (ItpClauseIterator &it) {
   stats.core = 0;
   vector<int> clause;
   for (uint64_t i = 0; i < size_clauses; i++)
@@ -1213,23 +1162,27 @@ void Drup2Itp::traverse_core (CaDiCaL::ClauseIterator &it) {
       stats.core++;
       for (int lit : *c)
         clause.push_back (lit);
-      if (!it.clause (clause))
+      assert (c->range.singleton ());
+      if (!it.clause (clause, c->range.min ()))
         return;
       clause.clear ();
     }
   for (int lit : assumptions)
     if (external->failed (lit)) {
       clause.push_back (lit);
-      if (!it.clause (clause))
+      // Range range = trail_range[abs (lit)];
+      // if (!it.clause (clause, range.min ()))
+      if (!it.assume (lit))
         return;
       clause.clear ();
     }
   if (conclusion == ConclusionType::CONSTRAINT) {
-    for (int lit : constraint)
-      clause.push_back (lit);
-    if (!it.clause (clause))
-      return;
-    clause.clear ();
+    assert (0 && "not implemented yet");
+    // for (int lit : constraint)
+    //   clause.push_back (lit);
+    // if (!it.clause (clause))
+    //   return;
+    // clause.clear ();
   }
 }
 
@@ -1359,7 +1312,6 @@ void Drup2Itp::connect_internal (Internal *i) {
   assert (i);
   internal = i;
   external = i->external;
-  // internal->opts.probe = 0;
 }
 
 void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
@@ -1380,10 +1332,10 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
       oc->original = true;
       assert (current_part);
       oc->range.join (current_part);
+      assert (oc->range.singleton ());
       for (int lit : c) {
         unsigned idx = abs (lit);
-        assert (idx < trail_range.size ());
-        trail_range[idx].join (current_part);
+        assert (idx < vars_range.size ());
         vars_range[idx].join (current_part);
       }
     }
@@ -1413,13 +1365,6 @@ void Drup2Itp::add_derived_clause (uint64_t id, bool, const vector<int> &c,
     import_clause (c);
     if (!imported_tautological)
       append (id, imported_clause, false /*addition*/);
-    unsigned fidx = abs (imported_clause[0]);
-    for (int i = 1; i < imported_clause.size (); i++) {
-      assert (abs (imported_clause[i]) < trail_range.size ());
-      const Range &r = trail_range[abs (imported_clause[i])];
-      assert (!r.undef ());
-      trail_range[fidx].join (r);
-    }
     imported_clause.clear ();
   }
   STOP (checking);
@@ -1433,14 +1378,6 @@ void Drup2Itp::add_assumption_clause (uint64_t id, const vector<int> &c,
     Clause *as = insert (c, id);
     as->garbage = true; // So we do not connect it to watches.
     assumption_clauses.push_back (as);
-    unsigned fidx = abs (imported_clause[0]);
-    for (int i = 1; i < imported_clause.size (); i++) {
-      assert (abs (imported_clause[i]) < trail_range.size ());
-      const Range &r = trail_range[abs (imported_clause[i])];
-      assert (!r.undef ());
-      trail_range[fidx].join (r);
-      as->range.join (r);
-    }
   }
   imported_clause.clear ();
 }
@@ -1481,6 +1418,7 @@ void Drup2Itp::add_constraint (const vector<int> &c) {
 void Drup2Itp::reset_assumptions () {
   assumptions.clear ();
   constraint.clear ();
+  assumption_clauses.clear ();
 }
 
 void Drup2Itp::conclude_unsat (ConclusionType c, const vector<uint64_t> &) {
@@ -1528,7 +1466,8 @@ void Drup2Itp::dump (const char *type) {
       fprintf (stderr, "[%lu] [%s] [ ", c->id, c->garbage ? "d" : "a");
       for (int lit : *c)
         fprintf (stderr, "%d ", lit);
-      fprintf (stderr, "] {%d-%d}\n", c->range.min (), c->range.max ());
+      fprintf (stderr, "] {%d-%d} %s\n", c->range.min (), c->range.max (),
+               c->core ? "*" : "");
     }
     fprintf (stderr, "DUMP PROOF HEAD\n");
   } else if (strcmp (type, "core") == 0) {
@@ -1592,6 +1531,19 @@ void Drup2Itp::dump (const char *type) {
 
 MiniTracer Drup2Itp::mini_tracer () const {
   return MiniTracer (vars_range, reasons);
+}
+
+void Drup2Itp::connect_to (Solver &s) {
+  bool configured = true;
+  configured &= s.set ("compact", 0);
+  configured &= s.set ("ilbassumptions", 0);
+  configured &= s.set ("probe", 0);
+  configured &= s.set ("block", 0);
+  configured &= s.set ("condition", 0);
+  configured &= s.set ("elim", 0);
+  assert (configured);
+  s.connect_proof_tracer (this, false /* without antecedents */);
+  return;
 }
 
 } // namespace DRUP2ITP
