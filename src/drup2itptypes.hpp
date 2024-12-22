@@ -8,10 +8,18 @@
 #include <cstdio>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
 
 namespace DRUP2ITP {
 
 using namespace std;
+
+class ItpClauseIterator {
+public:
+  virtual ~ItpClauseIterator () {}
+  virtual bool clause (const std::vector<int> &clause, int partition) = 0;
+  virtual bool assume (int lit) = 0;
+};
 
 #define PART_UNDEF 0
 
@@ -48,6 +56,13 @@ struct Clause {
   literal_iterator end () { return literals + size; }
   const_literal_iterator begin () const { return literals; }
   const_literal_iterator end () const { return literals + size; }
+  friend std::ostream &operator<<(std::ostream &os, const Clause &clause) {
+    os << "[ ";
+    for (int lit : clause)
+      os << lit << " ";
+    os << "]";
+    return os;
+  }
 };
 
 struct Watch {

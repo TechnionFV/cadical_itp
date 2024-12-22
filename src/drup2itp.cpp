@@ -87,7 +87,7 @@ void Drup2Itp::enlarge_clauses () {
 /*------------------------------------------------------------------------*/
 
 Drup2Itp::Drup2Itp ()
-    : internal (0), top_conflict (0), conflict (0),
+    : internal (0), conflict (0),
       sorter (&lit2trail, vals), current_part (0), maximal_part (0),
       imported_tautological (false), max_var (0), size_vars (0), vals (0),
       inconsistent (false), empty_original_clause (false), num_clauses (0),
@@ -592,9 +592,9 @@ void Drup2Itp::mark_core_trail_antecedents () {
     assert (reason);
     if (reason->core) {
       assert (reason->literals[0] == lit);
-      for (int lit : *reason) {
-        assert (abs (lit) < size_vars);
-        Clause *cr = reasons[abs (lit)];
+      for (int l : *reason) {
+        assert (abs (l) < size_vars);
+        Clause *cr = reasons[abs (l)];
         assert (cr);
         cr->core = true;
       }
@@ -606,9 +606,14 @@ void Drup2Itp::mark_core_trail_antecedents () {
 void Drup2Itp::mark_top_conflict () {
   switch (conclusion) {
   case ConclusionType::CONFLICT: {
-    assert (top_conflict);
-    top_conflict->core = true;
-    for (int lit : *top_conflict) {
+    if (!conflict) {
+      // overconstrained
+      assert (proof.size ());
+      conflict = proof.back ();
+    }
+    assert (conflict);
+    conflict->core = true;
+    for (int lit : *conflict) {
       assert (abs (lit) < size_vars);
       if (Clause *c = reasons[abs (lit)])
         c->core = true;
@@ -1050,8 +1055,8 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
   }
 
   if (!conflict) {
-    assert (proof.size ());
-    label_final (it, proof.back ());
+    assert (new_proof.size ());
+    label_final (it, new_proof.back ());
   }
 
 #if DNDEBUG
@@ -1062,7 +1067,6 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
   if (incremental) {
     // Currently, we don't want to manupulate the internal solver's
     // data base. Therefore, we undo the effects of the replay.
-    // TODO: Clean the proof post replay
     for (Clause *c : proof)
       c->garbage = true;
 
@@ -1111,10 +1115,6 @@ void Drup2Itp::restore_trail (bool original, bool core) {
       int unit = c->literals[0];
       if (val (unit))
         continue;
-      // if (c == top_conflict) {
-      //   // This is a falsified original unit.
-      //   continue;
-      // }
       assign (unit, c);
       propagate (core);
     }
@@ -1315,8 +1315,11 @@ void Drup2Itp::connect_internal (Internal *i) {
 }
 
 void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
-                                    bool) {
+                                    bool restore) {
   START (checking);
+  assert(!restore);
+  // TODO: If the clauase is restored, then revive the original clause
+  // and invalidate the entry where it was deleted in the proof stack
   stats.added++;
   stats.original++;
   if (c.empty ()) {
@@ -1346,21 +1349,15 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
 
 void Drup2Itp::add_derived_clause (uint64_t id, bool, const vector<int> &c,
                                    const vector<uint64_t> &) {
-  if (inconsistent)
-    return;
+  assert (!inconsistent);
   START (checking);
   if (c.empty ()) {
-    insert (c, id);
     inconsistent = true;
-    // TODO: It's unclear how the current
-    // tracer API can provide the necessary information on the top
-    // conflict without antecedents. This is a temporary hack to handle
-    // the top conflict. It's fragile and should be replaced with a better
-    // solution.
-    if (internal->conflict) {
-      // Falsified clause found during propagation
-      top_conflict = *find (internal->conflict->id);
-    }
+    // TODO: Trail, reasons, and top conflict are
+    // better established by the tracer alone
+    if (internal->conflict)
+      conflict = *find (internal->conflict->id);
+    insert (c, id);
   } else {
     import_clause (c);
     if (!imported_tautological)
@@ -1383,13 +1380,6 @@ void Drup2Itp::add_assumption_clause (uint64_t id, const vector<int> &c,
 }
 
 void Drup2Itp::delete_clause (uint64_t id, bool, const vector<int> &c) {
-  if (inconsistent) {
-    if (!top_conflict) {
-      // Falsified original clause found during propagation
-      top_conflict = *find (id);
-    }
-    return;
-  }
   START (checking);
   import_clause (c);
   if (!imported_tautological) {
@@ -1535,8 +1525,8 @@ MiniTracer Drup2Itp::mini_tracer () const {
 
 void Drup2Itp::connect_to (Solver &s) {
   bool configured = true;
-  configured &= s.set ("compact", 0);
   configured &= s.set ("ilbassumptions", 0);
+  configured &= s.set ("compact", 0);
   configured &= s.set ("probe", 0);
   configured &= s.set ("block", 0);
   configured &= s.set ("condition", 0);

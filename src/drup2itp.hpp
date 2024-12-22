@@ -17,13 +17,6 @@
 
 namespace DRUP2ITP {
 
-class ItpClauseIterator {
-public:
-  virtual ~ItpClauseIterator () {}
-  virtual bool clause (const std::vector<int> &clause, int partition) = 0;
-  virtual bool assume (int lit) = 0;
-};
-
 using namespace std;
 using CaDiCaL::ConclusionType;
 using CaDiCaL::External;
@@ -56,7 +49,6 @@ public:
 class Drup2Itp : public CaDiCaL::StatTracer {
   Internal *internal;
   External *external;
-  Clause *top_conflict;                // top conflict clause in last solve
   vector<Clause *> assumption_clauses; // assumptions lemmas in last solve
   Clause *conflict;          // conflict clause in last propagation
   ConclusionType conclusion; // unsat conclusion type
