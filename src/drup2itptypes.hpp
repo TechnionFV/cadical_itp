@@ -38,6 +38,10 @@ public:
   unsigned max () const;
   bool operator== (const Range &r);
   bool operator!= (const Range &r);
+  friend std::ostream &operator<<(std::ostream &os, const Range &range) {
+    os << "{ " << range.min () << "-" << range.max () << "}";
+    return os;
+  }
 };
 
 struct Clause {

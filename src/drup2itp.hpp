@@ -51,6 +51,7 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   External *external;
   vector<Clause *> assumption_clauses; // assumptions lemmas in last solve
   Clause *conflict;          // conflict clause in last propagation
+  Clause *confl_assumes;     // conflict clause in last propagation
   ConclusionType conclusion; // unsat conclusion type
   vector<Clause *> proof;    // clausal proof
   vector<Clause *> reasons;  // reasons for literals on trail

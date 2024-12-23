@@ -87,7 +87,7 @@ void Drup2Itp::enlarge_clauses () {
 /*------------------------------------------------------------------------*/
 
 Drup2Itp::Drup2Itp ()
-    : internal (0), conflict (0),
+    : internal (0), conflict (0), confl_assumes (0),
       sorter (&lit2trail, vals), current_part (0), maximal_part (0),
       imported_tautological (false), max_var (0), size_vars (0), vals (0),
       inconsistent (false), empty_original_clause (false), num_clauses (0),
@@ -620,14 +620,16 @@ void Drup2Itp::mark_top_conflict () {
     }
   } break;
   case ConclusionType::ASSUMPTIONS: {
-    if (size_clauses)
-      for (int lit : assumptions)
-        if (external->failed (lit)) {
-          assert (abs (lit) < size_vars);
-          Clause *c = reasons[abs (lit)];
-          if (c)
-            c->core = true;
-        }
+    assert (assumption_clauses.size () == 1);
+    confl_assumes = assumption_clauses[0];
+    assert (proof.back () == confl_assumes);
+    confl_assumes->core = true;
+    if (confl_assumes->size == 1)
+      for (int lit : *confl_assumes) {
+        assert (abs (lit) < size_vars);
+        if (Clause *c = reasons[abs (lit)])
+          c->core = true;
+      }
   } break;
   case ConclusionType::CONSTRAINT: {
     if (size_clauses)
@@ -641,22 +643,6 @@ void Drup2Itp::mark_top_conflict () {
   default:
     assert (false && "should not reach here");
   }
-  for (Clause *c : assumption_clauses) {
-    bool root_level_satisfied = false;
-    for (int lit : *c)
-      if (val (lit) > 0) {
-        root_level_satisfied = true;
-        break;
-      }
-    if (root_level_satisfied)
-      continue;
-    c->core = true;
-    proof.push_back (c);
-    stats.derived++;
-    proof.push_back (c);
-    stats.deleted++;
-  }
-  assumption_clauses.clear (); // they are part of the proof now
 }
 
 bool Drup2Itp::trim () {
@@ -667,8 +653,12 @@ bool Drup2Itp::trim () {
   // 'trail_sz' is used for lazy shrinking of the trail.
   unsigned trail_sz = trail.size ();
 
+
   // Main trimming loop
-  for (int i = proof.size () - 1; i >= 0; i--) {
+  int i = proof.size () - 1;
+  // if (confl_assumes->size == 1)
+  //   i--;
+  for (; i >= 0; i--) {
     Clause *c = proof[i];
 
     if (c->garbage) {
@@ -1017,6 +1007,9 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
       new_proof.push_back (p);
       c->core = false;
 
+      if (c == confl_assumes)
+        confl_assumes = p;
+
       it.chain_resolution (p);
 
       if (part > maximal_part) {
@@ -1033,6 +1026,8 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
     if (!learned) {
       assert (c->garbage && c->core);
       c->core = false;
+      if (c == confl_assumes)
+        confl_assumes = p;
       continue;
     }
 
@@ -1055,8 +1050,11 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
   }
 
   if (!conflict) {
-    assert (new_proof.size ());
-    label_final (it, new_proof.back ());
+    assert (confl_assumes && confl_assumes->core);
+    if (confl_assumes->size == 1)
+      label_final (it, reasons[abs (*confl_assumes->begin ())]);
+    else
+      label_final (it, confl_assumes);
   }
 
 #if DNDEBUG
@@ -1092,6 +1090,9 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
       Clause *c = to_delete[i];
       delete_clause (c);
     }
+
+    // for (auto &r : trail_range)
+    //   r.reset();
   }
 
   return true;
@@ -1317,7 +1318,6 @@ void Drup2Itp::connect_internal (Internal *i) {
 void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
                                     bool restore) {
   START (checking);
-  assert(!restore);
   // TODO: If the clauase is restored, then revive the original clause
   // and invalidate the entry where it was deleted in the proof stack
   stats.added++;
@@ -1372,9 +1372,8 @@ void Drup2Itp::add_assumption_clause (uint64_t id, const vector<int> &c,
   stats.added++;
   import_clause (c);
   if (!imported_tautological) {
-    Clause *as = insert (c, id);
-    as->garbage = true; // So we do not connect it to watches.
-    assumption_clauses.push_back (as);
+    append (id, imported_clause, false /*addition*/);
+    assumption_clauses.push_back (proof.back ());
   }
   imported_clause.clear ();
 }
@@ -1525,12 +1524,12 @@ MiniTracer Drup2Itp::mini_tracer () const {
 
 void Drup2Itp::connect_to (Solver &s) {
   bool configured = true;
-  configured &= s.set ("ilbassumptions", 0);
   configured &= s.set ("compact", 0);
   configured &= s.set ("probe", 0);
   configured &= s.set ("block", 0);
+  configured &= s.set ("cover", 0);
   configured &= s.set ("condition", 0);
-  configured &= s.set ("elim", 0);
+  configured &= s.set ("elim", 1);
   assert (configured);
   s.connect_proof_tracer (this, false /* without antecedents */);
   return;
