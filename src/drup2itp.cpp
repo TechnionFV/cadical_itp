@@ -11,6 +11,10 @@ extern "C" {
 
 namespace DRUP2ITP {
 
+#define FOREACH_CLAUSE(c) \
+  for (uint64_t i = 0; i < size_clauses; i++) \
+      for (Clause *c = clauses[i]; c; c = c->next)
+
 inline unsigned Drup2Itp::vlit (int lit) {
   unsigned res = (lit < 0) + 2u * (unsigned) abs (lit);
   return res;
@@ -735,10 +739,8 @@ bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
   if (undo) {
     // For application where only core is needed
     restore_proof_garbage_marks ();
-    for (uint64_t i = 0; i < size_clauses; i++)
-      for (Clause *c = clauses[i]; c; c = c->next)
-        c->core = false;
-    // // restore_trail ();
+    FOREACH_CLAUSE(c) c->core = false;
+    // restore_trail ();
   }
 
   return true;
@@ -1108,27 +1110,23 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
     restore_proof_garbage_marks ();
 
     vector<Clause *> to_delete;
-    for (uint64_t i = 0; i < size_clauses; i++)
-      for (Clause *c = clauses[i]; c; c = c->next) {
-        c->core = false;
-        assert (!c->original || c->range.singleton ());
-        if (!c->original)
-          c->range.reset ();
-        // TODO: Is this even needed?
-        if (max_id < c->id) {
-          if (!c->garbage)
-            detach_clause (c);
-          to_delete.push_back (c);
-        }
+    FOREACH_CLAUSE(c) {
+      c->core = false;
+      assert (!c->original || c->range.singleton ());
+      if (!c->original)
+        c->range.reset ();
+      // TODO: Is this even needed?
+      if (max_id < c->id) {
+        if (!c->garbage)
+          detach_clause (c);
+        to_delete.push_back (c);
       }
+    }
 
     for (int i = 0; i < to_delete.size (); i++) {
       Clause *c = to_delete[i];
       delete_clause (c);
     }
-
-    // for (auto &r : trail_range)
-    //   r.reset();
   }
 
   return true;
