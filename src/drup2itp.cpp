@@ -99,8 +99,7 @@ Drup2Itp::Drup2Itp ()
       num_watched (0), num_watched_garbage (0), size_clauses (0),
       clauses (0), next_to_propagate (0), detach_eagerly (true),
       reorder_proof (false) {
-  // Initialize random number table for hash function.
-  //
+  // Imported from Checker
   CaDiCaL::Random random (42);
   for (unsigned n = 0; n < num_nonces; n++) {
     uint64_t nonce = random.next ();
@@ -109,8 +108,7 @@ Drup2Itp::Drup2Itp ()
     assert (nonce), assert (nonce & 1);
     nonces[n] = nonce;
   }
-
-  memset (&stats, 0, sizeof (stats)); // Initialize statistics.
+  memset (&stats, 0, sizeof (stats));
 }
 
 Drup2Itp::~Drup2Itp () {
@@ -280,6 +278,7 @@ void Drup2Itp::backtrack (unsigned previously_propagated) {
 
 /*------------------------------------------------------------------------*/
 
+// Imported from Checker
 // This is a standard propagation routine without using blocking literals
 // nor without saving the last replacement position.
 
@@ -368,13 +367,8 @@ bool Drup2Itp::ordered_propagate (bool core) {
 void Drup2Itp::detach_clause (Clause *c) {
   assert (c && !c->garbage);
   c->garbage = true;
-  // if (detach_eagerly) {
   if (c->size > 1)
     unwatch_clause (c);
-  // } else if (num_watched_garbage * 2 >= num_watched)
-  //   flush_watches ();
-  // else
-  //   num_watched_garbage += 2;
 }
 
 void Drup2Itp::attach_clause (Clause *c) {
@@ -804,15 +798,16 @@ void Drup2Itp::label_final (ResolutionProofIterator &it, Clause *source) {
 
 bool Drup2Itp::skip_lemma (Clause *c, unsigned index) {
   assert (c);
+  const bool clause_restored_at_index = restored (c, index);
   if (!c->garbage) {
     if (c->core)
       return true;
-    if (!c->restore)
+    if (!clause_restored_at_index)
       if (!is_on_trail (c) || satisfied (c))
         detach_clause (c);
     return true;
   } else {
-    if (c->restore && c->restore >= index)
+    if (clause_restored_at_index)
       return true;
     if (!c->core)
       return true;
@@ -1438,10 +1433,6 @@ void Drup2Itp::delete_clause (uint64_t id, bool, const vector<int> &c) {
 void Drup2Itp::add_assumption (int lit) { assumptions.push_back (lit); }
 
 void Drup2Itp::add_constraint (const vector<int> &c) {
-  // If the user adds a constraint while there is already one,
-  // the previous one is discarded. It's better if discarding the previous
-  // was done explicitly through the tracer API however.
-  // assert (constraint.empty ());
   constraint.clear ();
   for (int lit : c)
     constraint.push_back (lit);
@@ -1569,9 +1560,9 @@ void Drup2Itp::connect_to (Solver &s) {
   bool configured = true;
   configured &= s.set ("compact", 0);
   configured &= s.set ("probe", 0);
-  // configured &= s.set ("block", 0);
-  // configured &= s.set ("cover", 0);
-  // configured &= s.set ("condition", 0);
+  configured &= s.set ("block", 1);
+  configured &= s.set ("cover", 1);
+  configured &= s.set ("condition", 1);
   configured &= s.set ("elim", 1);
   assert (configured);
   s.connect_proof_tracer (this, false /* without antecedents */);
