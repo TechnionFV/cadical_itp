@@ -647,10 +647,48 @@ void Drup2Itp::mark_top_conflict () {
   }
 }
 
+void sanity_check (const vector<Clause *> &proof) {
+  unordered_map<Clause *, vector<int>> m;
+  for (int i = 0; i < proof.size (); i++)
+    m[proof[i]].push_back (i);
+  for (const auto &p : m) {
+    Clause *c = p.first;
+    const auto &v = p.second;
+    if (c->original) {
+      assert (v.size ());
+      assert (v.size () % 2 == 1 || !c->garbage);
+      assert (v.size () % 2 == 0 || c->garbage);
+      assert (v.size () == 1 || c->restore);
+      assert (v.size () == 1 || c->restore > v[0]);
+    } else {
+      assert (v.size ());
+      assert (v.size () % 2 == 1 || c->garbage);
+      assert (v.size () % 2 == 0 || !c->garbage);
+      assert (v.size () <= 2 || c->restore);
+      assert (v.size () <= 2 || c->restore > v[0]);
+    }
+  }
+}
+
+void Drup2Itp::restore_proof_garbage_marks () {
+  for (Clause *c : proof)
+    c->garbage = !c->original;
+  for (Clause *c : proof)
+    c->garbage = !c->garbage;
+}
+
+static bool restored (Clause *c, int i) {
+  return c->restore && c->restore <= i;
+}
+
 bool Drup2Itp::trim () {
 
   stats.trims++;
   mark_top_conflict ();
+
+#if DNDEBUG
+  sanity_check (proof);
+#endif
 
   // 'trail_sz' is used for lazy shrinking of the trail.
   unsigned trail_sz = trail.size ();
@@ -669,11 +707,10 @@ bool Drup2Itp::trim () {
 
     detach_clause (c);
 
-    if (c->restore && c->restore > i)
+    if (!c->core || restored (c, i))
       continue;
 
-    if (c->original || !c->core)
-      continue;
+    assert (!c->original);
 
     RUP (c, trail_sz);
   }
@@ -697,8 +734,7 @@ bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
 
   if (undo) {
     // For application where only core is needed
-    for (Clause *c : proof)
-      c->garbage = !c->garbage;
+    restore_proof_garbage_marks ();
     for (uint64_t i = 0; i < size_clauses; i++)
       for (Clause *c = clauses[i]; c; c = c->next)
         c->core = false;
@@ -764,15 +800,18 @@ void Drup2Itp::label_final (ResolutionProofIterator &it, Clause *source) {
   it.chain_resolution (/*, 0*/);
 }
 
-bool Drup2Itp::skip_lemma (Clause *c) {
+bool Drup2Itp::skip_lemma (Clause *c, unsigned index) {
   assert (c);
   if (!c->garbage) {
     if (c->core)
       return true;
-    if (!is_on_trail (c) || satisfied (c))
-      detach_clause (c);
+    if (!c->restore)
+      if (!is_on_trail (c) || satisfied (c))
+        detach_clause (c);
     return true;
   } else {
+    if (c->restore && c->restore >= index)
+      return true;
     if (!c->core)
       return true;
     assert (!is_on_trail (c));
@@ -780,7 +819,6 @@ bool Drup2Itp::skip_lemma (Clause *c) {
       return true;
   }
 
-  // TODO: Is this even needed?
   int *literals = c->literals;
   if (val (literals[0]))
     for (unsigned j = 1; j < c->size; j++)
@@ -934,8 +972,9 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
     return true;
   }
 
-  for (Clause *c : proof) {
-    if (skip_lemma (c))
+  for (int index = 0; index < proof.size (); index++) {
+    Clause *c = proof[index];
+    if (skip_lemma (c, index))
       continue;
 
     assert (c->garbage);
@@ -1066,12 +1105,7 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
   if (incremental) {
     // Currently, we don't want to manupulate the internal solver's
     // data base. Therefore, we undo the effects of the replay.
-    for (Clause *c : proof)
-      c->garbage = true;
-
-    for (Clause *c : proof)
-      if (!c->original)
-        c->garbage = !c->garbage;
+    restore_proof_garbage_marks ();
 
     vector<Clause *> to_delete;
     for (uint64_t i = 0; i < size_clauses; i++)
@@ -1537,9 +1571,9 @@ void Drup2Itp::connect_to (Solver &s) {
   bool configured = true;
   configured &= s.set ("compact", 0);
   configured &= s.set ("probe", 0);
-  configured &= s.set ("block", 1);
-  configured &= s.set ("cover", 1);
-  configured &= s.set ("condition", 1);
+  // configured &= s.set ("block", 0);
+  // configured &= s.set ("cover", 0);
+  // configured &= s.set ("condition", 0);
   configured &= s.set ("elim", 1);
   assert (configured);
   s.connect_proof_tracer (this, false /* without antecedents */);

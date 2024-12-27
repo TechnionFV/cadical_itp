@@ -134,11 +134,12 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   void append (uint64_t id, const vector<int> &, bool);
   void traverse_core (ItpClauseIterator &);
   void mark_top_conflict ();
+  void restore_proof_garbage_marks ();
   bool trim ();
   void restore_trail (bool original = false, bool core = false);
   void label_root_level (ResolutionProofIterator &, int &);
   void label_final (ResolutionProofIterator &, Clause *);
-  bool skip_lemma (Clause *);
+  bool skip_lemma (Clause *, unsigned);
   bool clauses_are_identical (Clause *, const vector<int> &);
   bool colorize (ResolutionProofIterator &, Clause *, unsigned,
                  vector<int> &, Range &);
