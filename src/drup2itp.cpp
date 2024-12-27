@@ -39,6 +39,7 @@ Clause *Drup2Itp::new_clause (const vector<int> &literals, uint64_t id,
   res->garbage = false;
   res->core = false;
   res->original = false;
+  res->restore = 0;
   res->range = Range ();
   res->size = size;
   int *p = res->literals;
@@ -604,6 +605,7 @@ void Drup2Itp::mark_core_trail_antecedents () {
 }
 
 void Drup2Itp::mark_top_conflict () {
+  confl_assumes = 0;
   switch (conclusion) {
   case ConclusionType::CONFLICT: {
     if (!conflict) {
@@ -653,12 +655,8 @@ bool Drup2Itp::trim () {
   // 'trail_sz' is used for lazy shrinking of the trail.
   unsigned trail_sz = trail.size ();
 
-
-  // Main trimming loop
-  int i = proof.size () - 1;
-  // if (confl_assumes->size == 1)
-  //   i--;
-  for (; i >= 0; i--) {
+  int i = confl_assumes && confl_assumes->size == 1 ? proof.size () - 1 : proof.size ();
+  while (--i >= 0) {
     Clause *c = proof[i];
 
     if (c->garbage) {
@@ -671,8 +669,13 @@ bool Drup2Itp::trim () {
 
     detach_clause (c);
 
-    if (c->core)
-      RUP (c, trail_sz);
+    if (c->restore && c->restore > i)
+      continue;
+
+    if (c->original || !c->core)
+      continue;
+
+    RUP (c, trail_sz);
   }
 
   shrink_trail (trail_sz);
@@ -772,13 +775,12 @@ bool Drup2Itp::skip_lemma (Clause *c) {
   } else {
     if (!c->core)
       return true;
-
     assert (!is_on_trail (c));
-
     if (satisfied (c))
       return true;
   }
 
+  // TODO: Is this even needed?
   int *literals = c->literals;
   if (val (literals[0]))
     for (unsigned j = 1; j < c->size; j++)
@@ -933,7 +935,6 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
   }
 
   for (Clause *c : proof) {
-
     if (skip_lemma (c))
       continue;
 
@@ -1079,6 +1080,7 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
         assert (!c->original || c->range.singleton ());
         if (!c->original)
           c->range.reset ();
+        // TODO: Is this even needed?
         if (max_id < c->id) {
           if (!c->garbage)
             detach_clause (c);
@@ -1318,31 +1320,40 @@ void Drup2Itp::connect_internal (Internal *i) {
 void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
                                     bool restore) {
   START (checking);
-  // TODO: If the clauase is restored, then revive the original clause
-  // and invalidate the entry where it was deleted in the proof stack
   stats.added++;
   stats.original++;
   if (c.empty ()) {
+    assert (!restore);
     Clause *oc = insert (c, id);
     oc->original = true;
     oc->range.join (current_part);
     inconsistent = true;
     empty_original_clause = true;
   } else {
-    import_clause (c);
-    if (!imported_tautological) {
-      Clause *oc = insert (imported_clause, id);
-      oc->original = true;
-      assert (current_part);
-      oc->range.join (current_part);
-      assert (oc->range.singleton ());
-      for (int lit : c) {
-        unsigned idx = abs (lit);
-        assert (idx < vars_range.size ());
-        vars_range[idx].join (current_part);
+    if (restore) {
+      Clause *pc = *find (id);
+      assert (pc && pc->garbage);
+      if (!pc->restore)
+        pc->restore = proof.size ();
+      proof.push_back (pc);
+      pc->garbage = false;
+    } else {
+      import_clause (c);
+      if (!imported_tautological) {
+        assert (!size_clauses || !*find (id));
+        Clause *oc = insert (imported_clause, id);
+        oc->original = true;
+        assert (current_part);
+        oc->range.join (current_part);
+        assert (oc->range.singleton ());
+        for (int lit : c) {
+          unsigned idx = abs (lit);
+          assert (idx < vars_range.size ());
+          vars_range[idx].join (current_part);
+        }
       }
+      imported_clause.clear ();
     }
-    imported_clause.clear ();
   }
   STOP (checking);
 }
@@ -1526,9 +1537,9 @@ void Drup2Itp::connect_to (Solver &s) {
   bool configured = true;
   configured &= s.set ("compact", 0);
   configured &= s.set ("probe", 0);
-  configured &= s.set ("block", 0);
-  configured &= s.set ("cover", 0);
-  configured &= s.set ("condition", 0);
+  configured &= s.set ("block", 1);
+  configured &= s.set ("cover", 1);
+  configured &= s.set ("condition", 1);
   configured &= s.set ("elim", 1);
   assert (configured);
   s.connect_proof_tracer (this, false /* without antecedents */);
