@@ -52,7 +52,6 @@ struct Clause {
   bool core;
   bool original;
   Range range;
-  unsigned restore;
   unsigned size;
   int literals[1];
   typedef int *literal_iterator;

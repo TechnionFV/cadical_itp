@@ -43,7 +43,6 @@ Clause *Drup2Itp::new_clause (const vector<int> &literals, uint64_t id,
   res->garbage = false;
   res->core = false;
   res->original = false;
-  res->restore = 0;
   res->range = Range ();
   res->size = size;
   int *p = res->literals;
@@ -378,7 +377,7 @@ void Drup2Itp::attach_clause (Clause *c) {
     watch_clause (c);
 }
 
-bool Drup2Itp::satisfied (Clause *c) {
+bool Drup2Itp::satisfied (Clause *c) const {
   assert (c);
   for (int lit : *c)
     if (val (lit) > 0)
@@ -645,29 +644,6 @@ void Drup2Itp::mark_top_conflict () {
   }
 }
 
-void sanity_check (const vector<Clause *> &proof) {
-  unordered_map<Clause *, vector<int>> m;
-  for (int i = 0; i < proof.size (); i++)
-    m[proof[i]].push_back (i);
-  for (const auto &p : m) {
-    Clause *c = p.first;
-    const auto &v = p.second;
-    if (c->original) {
-      assert (v.size ());
-      assert (v.size () % 2 == 1 || !c->garbage);
-      assert (v.size () % 2 == 0 || c->garbage);
-      assert (v.size () == 1 || c->restore);
-      assert (v.size () == 1 || c->restore > v[0]);
-    } else {
-      assert (v.size ());
-      assert (v.size () % 2 == 1 || c->garbage);
-      assert (v.size () % 2 == 0 || !c->garbage);
-      assert (v.size () <= 2 || c->restore);
-      assert (v.size () <= 2 || c->restore > v[0]);
-    }
-  }
-}
-
 void Drup2Itp::restore_proof_garbage_marks () {
   for (Clause *c : proof)
     c->garbage = !c->original;
@@ -675,18 +651,26 @@ void Drup2Itp::restore_proof_garbage_marks () {
     c->garbage = !c->garbage;
 }
 
-static bool restored (Clause *c, int i) {
-  return c->restore && c->restore <= i;
+bool Drup2Itp::restored (Clause *c, unsigned index) const {
+  assert (c);
+  const auto &it = restored_clauses.find(c->id);
+  if (it == restored_clauses.end())
+    return false;
+  return it->second <= index;
+}
+
+void Drup2Itp::restore_clause (Clause *c, unsigned index) {
+  assert (c && index);
+  if (!restored (c, index))
+    restored_clauses[c->id] = index;
 }
 
 bool Drup2Itp::trim () {
 
+  cout << "TRIMMING || " << restored_clauses.size () << "/" << size_clauses << endl;
+
   stats.trims++;
   mark_top_conflict ();
-
-#if DNDEBUG
-  sanity_check (proof);
-#endif
 
   // 'trail_sz' is used for lazy shrinking of the trail.
   unsigned trail_sz = trail.size ();
@@ -1348,8 +1332,8 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
                                     bool restore) {
   START (checking);
   stats.added++;
-  stats.original++;
   if (c.empty ()) {
+    stats.original++;
     assert (!restore);
     Clause *oc = insert (c, id);
     oc->original = true;
@@ -1358,15 +1342,16 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
     empty_original_clause = true;
   } else {
     if (restore) {
+      stats.restored++;
       Clause *pc = *find (id);
       assert (pc && pc->garbage);
-      if (!pc->restore)
-        pc->restore = proof.size ();
+      restore_clause (pc, proof.size ());
       proof.push_back (pc);
       pc->garbage = false;
     } else {
       import_clause (c);
       if (!imported_tautological) {
+        stats.original++;
         assert (!size_clauses || !*find (id));
         Clause *oc = insert (imported_clause, id);
         oc->original = true;

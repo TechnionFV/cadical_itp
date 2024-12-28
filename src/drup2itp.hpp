@@ -9,10 +9,8 @@
 
 #include <cstdio>
 #include <iostream>
-#include <set>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace DRUP2ITP {
@@ -63,8 +61,8 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   vector<unsigned> lit2trail; // map from literal to trail index
   vector<char> seen;
   vector<signed char> marks;
-  vector<Range> vars_range;    // Range of variables
-  vector<Range> trail_range;   // Range of variables on trail (units)
+  vector<Range> vars_range;  // Range of variables
+  vector<Range> trail_range; // Range of variables on trail (units)
   unsigned current_part;       // current partition
   unsigned maximal_part;       // maximal partition
   vector<int> imported_clause; // last imported clause
@@ -82,6 +80,7 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   unsigned next_to_propagate;   // next to propagate on trail
   int last_assumed_trail;       // trail index of last assumed literal
   int top_root_trail;           // top trail index of root level units
+  unordered_map<uint64_t, unsigned> restored_clauses;
   static const unsigned num_nonces = 4;
   uint64_t nonces[num_nonces]; // random numbers for hashing
   bool detach_eagerly;
@@ -119,7 +118,9 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   void flush_watches ();
   void detach_clause (Clause *c);
   void attach_clause (Clause *c);
-  bool satisfied (Clause *);
+  bool satisfied (Clause *) const;
+  bool restored (Clause *, unsigned) const;
+  void restore_clause (Clause *, unsigned);
   void init_trail_and_reasons ();
   void init_vals ();
   int init_data_structures ();
@@ -150,6 +151,7 @@ class Drup2Itp : public CaDiCaL::StatTracer {
     int64_t original;     // number of added original clauses
     int64_t derived;      // number of added derived clauses
     int64_t deleted;      // number of deleted clauses
+    int64_t restored;     // number of restored clauses
     int64_t assumptions;  // number of assumed literals
     int64_t propagations; // number of propagated literals
     int64_t insertions;   // number of clauses added to hash table
