@@ -158,7 +158,8 @@ class Drup2Itp : public CaDiCaL::StatTracer {
     int64_t collisions;   // number of hash collisions in 'find'
     int64_t searches;     // number of searched clauses in 'find'
     int64_t trims;        // number of trims
-    int64_t core;         // number of original core clauses in last trim (only during ::traverse_core)
+    int64_t core_lemmas;  // number of learnt core clauses in last trim
+    int64_t core_clauses; // number of original core clauses in last trim
     int64_t units;        // number of unit clauses
   } stats;
 

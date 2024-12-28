@@ -711,11 +711,22 @@ bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
 
   if (it)
     traverse_core (*it, undo);
+  else {
+    stats.core_clauses = stats.core_lemmas = 0;
+    const bool mark = !undo;
+    FOREACH_CLAUSE(c) {
+      if (!c->core)
+        continue;
+      if (c->original)
+        stats.core_clauses++;
+      else
+        stats.core_lemmas++;
+      c->core = mark;
+    }
+  }
 
   if (undo) {
     restore_proof_garbage_marks ();
-    if (!it)
-      FOREACH_CLAUSE(c) c->core = false;
     // restore_trail ();
   }
 
@@ -1164,19 +1175,20 @@ void Drup2Itp::append (uint64_t id, const vector<int> &literals,
   }
 }
 
-// stats.core may be inaccurate if traversal aborts early
+// stats.core_lemmas may be inaccurate if traversal aborts early
 void Drup2Itp::traverse_core (ItpClauseIterator &it, bool undo_core_marks) {
-  stats.core = 0;
+  stats.core_clauses = stats.core_lemmas = 0;
   const bool mark = !undo_core_marks;
   FOREACH_CLAUSE (c) {
     if (!c->core)
       continue;
     if (!c->original) {
+      stats.core_lemmas++;
       c->core = mark;
       continue;
     }
+    stats.core_clauses++;
     c->core = mark;
-    stats.core++;
     assert (c->range.singleton ());
     if (!it.clause (c))
       return;
@@ -1328,7 +1340,6 @@ void Drup2Itp::connect_internal (Internal *i) {
 
 void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
                                     bool restore) {
-  START (checking);
   stats.added++;
   if (c.empty ()) {
     stats.original++;
@@ -1365,13 +1376,11 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
       imported_clause.clear ();
     }
   }
-  STOP (checking);
 }
 
 void Drup2Itp::add_derived_clause (uint64_t id, bool, const vector<int> &c,
                                    const vector<uint64_t> &) {
   assert (!inconsistent);
-  START (checking);
   if (c.empty ()) {
     inconsistent = true;
     // TODO: Trail, reasons, and top conflict are
@@ -1385,7 +1394,6 @@ void Drup2Itp::add_derived_clause (uint64_t id, bool, const vector<int> &c,
       append (id, imported_clause, false /*addition*/);
     imported_clause.clear ();
   }
-  STOP (checking);
 }
 
 void Drup2Itp::add_assumption_clause (uint64_t id, const vector<int> &c,
@@ -1400,7 +1408,6 @@ void Drup2Itp::add_assumption_clause (uint64_t id, const vector<int> &c,
 }
 
 void Drup2Itp::delete_clause (uint64_t id, bool, const vector<int> &c) {
-  START (checking);
   import_clause (c);
   if (!imported_tautological) {
     append (id, imported_clause, true /*deletion*/);
@@ -1410,7 +1417,6 @@ void Drup2Itp::delete_clause (uint64_t id, bool, const vector<int> &c) {
         swap (lits[i], lits[--size]);
   }
   imported_clause.clear ();
-  STOP (checking);
 }
 
 void Drup2Itp::add_assumption (int lit) { assumptions.push_back (lit); }
@@ -1459,7 +1465,7 @@ void Drup2Itp::print_stats () {
   MSG ("units:           %15" PRId64 "", stats.units);
   MSG ("original core:   %15" PRId64
        "   %10.2f %%  of all original clauses",
-       stats.core, CaDiCaL::percent (stats.core, stats.original));
+       stats.core_clauses, CaDiCaL::percent (stats.core_clauses, stats.original));
 }
 
 bool Drup2Itp::consistent () const { return !inconsistent; }
