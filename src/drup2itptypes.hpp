@@ -14,10 +14,12 @@ namespace DRUP2ITP {
 
 using namespace std;
 
+class Clause;
+
 class ItpClauseIterator {
 public:
   virtual ~ItpClauseIterator () {}
-  virtual bool clause (const std::vector<int> &clause, int partition) = 0;
+  virtual bool clause (const Clause *) = 0;
   virtual bool assume (int lit) = 0;
 };
 

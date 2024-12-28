@@ -667,8 +667,6 @@ void Drup2Itp::restore_clause (Clause *c, unsigned index) {
 
 bool Drup2Itp::trim () {
 
-  cout << "TRIMMING || " << restored_clauses.size () << "/" << size_clauses << endl;
-
   stats.trims++;
   mark_top_conflict ();
 
@@ -712,12 +710,12 @@ bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
     return false;
 
   if (it)
-    traverse_core (*it);
+    traverse_core (*it, undo);
 
   if (undo) {
-    // For application where only core is needed
     restore_proof_garbage_marks ();
-    FOREACH_CLAUSE(c) c->core = false;
+    if (!it)
+      FOREACH_CLAUSE(c) c->core = false;
     // restore_trail ();
   }
 
@@ -1166,29 +1164,29 @@ void Drup2Itp::append (uint64_t id, const vector<int> &literals,
   }
 }
 
-void Drup2Itp::traverse_core (ItpClauseIterator &it) {
+// stats.core may be inaccurate if traversal aborts early
+void Drup2Itp::traverse_core (ItpClauseIterator &it, bool undo_core_marks) {
   stats.core = 0;
-  vector<int> clause;
-  for (uint64_t i = 0; i < size_clauses; i++)
-    for (Clause *c = clauses[i]; c; c = c->next) {
-      if (!c->original || !c->core)
-        continue;
-      stats.core++;
-      for (int lit : *c)
-        clause.push_back (lit);
-      assert (c->range.singleton ());
-      if (!it.clause (clause, c->range.min ()))
-        return;
-      clause.clear ();
+  const bool mark = !undo_core_marks;
+  FOREACH_CLAUSE (c) {
+    if (!c->core)
+      continue;
+    if (!c->original) {
+      c->core = mark;
+      continue;
     }
+    c->core = mark;
+    stats.core++;
+    assert (c->range.singleton ());
+    if (!it.clause (c))
+      return;
+  }
   for (int lit : assumptions)
     if (external->failed (lit)) {
-      clause.push_back (lit);
       // Range range = trail_range[abs (lit)];
       // if (!it.clause (clause, range.min ()))
       if (!it.assume (lit))
         return;
-      clause.clear ();
     }
   if (conclusion == ConclusionType::CONSTRAINT) {
     assert (0 && "not implemented yet");
