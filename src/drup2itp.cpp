@@ -598,7 +598,7 @@ void Drup2Itp::mark_top_conflict () {
       }
   } break;
   case ConclusionType::CONSTRAINT: {
-    assert (false && "not implemented yet");
+    assert (0 && "not implemented yet");
   } break;
   default:
     assert (false && "should not reach here");
@@ -632,11 +632,6 @@ void Drup2Itp::restore_state () {
       p.second->range = trail_range[idx];
     assign (unit, p.second);
   }
-
-  // Reset watches
-  //
-  if (watching ())
-    reset_watches ();
 }
 
 bool Drup2Itp::restored (Clause *c, unsigned index) const {
@@ -656,7 +651,6 @@ void Drup2Itp::restore_clause (Clause *c, unsigned index) {
 void Drup2Itp::trim () {
 
   stats.trims++;
-  mark_top_conflict ();
 
   // 'trail_sz' is used for lazy shrinking of the trail.
   unsigned trail_sz = trail.size ();
@@ -690,27 +684,26 @@ bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
   if (empty_original_clause)
     return true;
 
-  assert (!watching ());
-
   // Store the trail
-  //
   backup_trail ();
 
-  // Connect watches and propagate
-  //
-  init_watches ();
-  connect_watches ();
+  // Connect watches
+  if (watching ())
+    reset_watches ();
+  init_watches (), connect_watches ();
+
+  // Propagate the trail
+  conflict = 0, next_to_propagate = 0;
   propagate ();
 
+  mark_top_conflict ();
+
   // Main trimming procedure
-  //
   trim ();
 
   // Collect statistics and report the UNSAT core
-  //
   stats.core_clauses = stats.core_lemmas = 0;
   const bool mark = !undo;
-
   FOREACH_CLAUSE(c) {
     if (!c->core)
       continue;
@@ -724,7 +717,6 @@ bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
     }
     c->core = mark;
   }
-
   if (it) {
     for (int lit : assumptions)
       if (external->failed (lit))
@@ -734,9 +726,7 @@ bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
   }
 
   // For applications where only trimming is required
-  //
-  if (undo)
-    restore_state ();
+  if (undo) restore_state ();
 
   return true;
 }
@@ -1365,11 +1355,8 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
 void Drup2Itp::add_derived_clause (uint64_t id, bool, const vector<int> &c,
                                    const vector<uint64_t> &) {
   if (c.empty ()) {
-    // assert (inconsistent);
-    // assert (conflict);
     insert (c, id);
   } else {
-    // assert (!inconsistent);
     import_clause (c);
     if (!imported_tautological)
       append (id, imported_clause, false /*addition*/);
@@ -1531,6 +1518,7 @@ void Drup2Itp::connect_to (Solver &s) {
   return;
 }
 
+// TODO: Use this in Minimzer
 void Drup2Itp::resize (int64_t idx) {
   if (idx >= size_vars)
     enlarge_db (idx);
