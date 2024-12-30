@@ -58,6 +58,7 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   vector<Watches> wtab; // table of watches for all literals
   WatchSort sorter;
   vector<int> trail;          // currently assigned literals
+  vector<pair<int, Clause *>> trail_backup;
   vector<unsigned> lit2trail; // map from literal to trail index
   vector<char> seen;
   vector<signed char> marks;
@@ -67,7 +68,6 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   unsigned maximal_part;       // maximal partition
   vector<int> imported_clause; // last imported clause
   bool imported_tautological;  // last imported clause is tautological
-  int max_var;
   int64_t size_vars;
   signed char *vals;            // assignment [-max_var,max_var]
   bool inconsistent;            // empty clause found
@@ -83,7 +83,6 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   unordered_map<uint64_t, unsigned> restored_clauses;
   static const unsigned num_nonces = 4;
   uint64_t nonces[num_nonces]; // random numbers for hashing
-  bool detach_eagerly;
   bool reorder_proof;
   unsigned vlit (int);
   Watches &watches (int);
@@ -105,6 +104,7 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   void delete_clause (Clause *);
   void deallocate_clause (Clause *);
   signed char val (int) const;
+  void enqueue (int, Clause *);
   void assign (int, Clause *);
   void assume (int);
   bool propagate (bool core = false, unsigned part = 0);
@@ -112,6 +112,7 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   void backtrack (unsigned);
   void sort_watch (Clause *);
   void init_watches ();
+  void connect_watches ();
   void clear_watches ();
   void reset_watches ();
   void flush_watches (int, Watches &);
@@ -124,6 +125,7 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   void init_trail_and_reasons ();
   void init_vals ();
   int init_data_structures ();
+  void enlarge_db (int64_t);
   void RUP (Clause *, unsigned &);
   bool is_on_trail (Clause *);
   void undo_trail_literal (int);
@@ -135,9 +137,9 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   void append (uint64_t id, const vector<int> &, bool);
   void traverse_core (ItpClauseIterator &, bool undo_core_marks);
   void mark_top_conflict ();
-  void restore_proof_garbage_marks ();
-  bool trim ();
-  void restore_trail (bool original = false, bool core = false);
+  void restore_state ();
+  void trim ();
+  void backup_trail ();
   void label_root_level (ResolutionProofIterator &, int &);
   void label_final (ResolutionProofIterator &, Clause *);
   bool skip_lemma (Clause *, unsigned);
@@ -194,6 +196,7 @@ public:
   void dump (const char *);
   MiniTracer mini_tracer () const;
   void connect_to (Solver &);
+  void resize (int64_t); // To avoid dynamic enlarge_db overhead
 };
 
 } // namespace DRUP2ITP
