@@ -68,6 +68,7 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   unsigned maximal_part;       // maximal partition
   vector<int> imported_clause; // last imported clause
   bool imported_tautological;  // last imported clause is tautological
+  bool imported_falsified;     // last imported clause is falsified
   int64_t size_vars;
   signed char *vals;            // assignment [-max_var,max_var]
   bool inconsistent;            // empty clause found
@@ -122,9 +123,6 @@ class Drup2Itp : public CaDiCaL::StatTracer {
   bool satisfied (Clause *) const;
   bool restored (Clause *, unsigned) const;
   void restore_clause (Clause *, unsigned);
-  void init_trail_and_reasons ();
-  void init_vals ();
-  int init_data_structures ();
   void enlarge_db (int64_t);
   void RUP (Clause *, unsigned &);
   bool is_on_trail (Clause *);

@@ -178,6 +178,7 @@ void Drup2Itp::import_clause (const vector<int> &c) {
     if (idx >= size_vars)
       enlarge_db (idx);
   }
+  imported_falsified = true;
   imported_tautological = false;
   int tmp;
   for (int lit : c) {
@@ -188,6 +189,7 @@ void Drup2Itp::import_clause (const vector<int> &c) {
       imported_clause.push_back (lit);
       mark (lit);
     }
+    imported_falsified &= val (lit) < 0;
   }
   for (const auto &lit : c)
     unmark (lit);
@@ -228,9 +230,14 @@ Clause *Drup2Itp::insert (const vector<int> &literals, uint64_t id) {
 /*------------------------------------------------------------------------*/
 
 void Drup2Itp::enqueue (int lit, Clause *c) {
-  if (val (lit) > 0)
+  const auto tmp = val (lit);
+  if (tmp > 0)
     return;
-  assign (lit, c);
+  else if (tmp < 0) {
+    conflict = c;
+    inconsistent = true;
+  } else
+    assign (lit, c);
 }
 
 inline void Drup2Itp::assign (int lit, Clause *reason) {
@@ -632,6 +639,10 @@ void Drup2Itp::restore_state () {
       p.second->range = trail_range[idx];
     assign (unit, p.second);
   }
+  next_to_propagate = 0;
+
+  // Reset conflict
+  conflict = 0;
 }
 
 bool Drup2Itp::restored (Clause *c, unsigned index) const {
@@ -673,6 +684,9 @@ void Drup2Itp::trim () {
       continue;
 
     RUP (c, trail_sz);
+
+    if (internal->terminated_asynchronously ())
+      return;
   }
 
   shrink_trail (trail_sz);
@@ -692,9 +706,11 @@ bool Drup2Itp::trim (ItpClauseIterator *it, bool undo) {
     reset_watches ();
   init_watches (), connect_watches ();
 
+  assert (!next_to_propagate);
+
   // Propagate the trail
-  conflict = 0, next_to_propagate = 0;
-  propagate ();
+  if (!conflict)
+    propagate ();
 
   mark_top_conflict ();
 
@@ -1318,7 +1334,7 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
     Clause *oc = insert (c, id);
     oc->original = true;
     oc->range.join (current_part);
-    empty_original_clause = true;
+    inconsistent = empty_original_clause = true;
   } else {
     if (restore) {
       stats.restored++;
@@ -1332,6 +1348,7 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
     } else {
       import_clause (c);
       if (!imported_tautological) {
+        assert (imported_clause.size());
         stats.original++;
         assert (!size_clauses || !*find (id));
         Clause *oc = insert (imported_clause, id);
@@ -1346,6 +1363,10 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
           assert (idx < vars_range.size ());
           vars_range[idx].join (current_part);
         }
+        if (imported_falsified) {
+          conflict = oc;
+          inconsistent = true;
+        }
       }
       imported_clause.clear ();
     }
@@ -1356,10 +1377,12 @@ void Drup2Itp::add_derived_clause (uint64_t id, bool, const vector<int> &c,
                                    const vector<uint64_t> &) {
   if (c.empty ()) {
     insert (c, id);
+    inconsistent = true;
   } else {
     import_clause (c);
     if (!imported_tautological)
       append (id, imported_clause, false /*addition*/);
+    assert (!imported_falsified);
     imported_clause.clear ();
   }
 }
