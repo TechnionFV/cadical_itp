@@ -1006,6 +1006,9 @@ bool Drup2Itp::replay (ResolutionProofIterator &it, bool incremental) {
     }
     assert (conflict);
 
+    if (internal->terminated_asynchronously ())
+      return false;
+
     Clause *p = conflict;
     bool learned = true;
     vector<int> learnt;
