@@ -46,7 +46,7 @@ void Internal::remove_observed_var (int ilit) {
     backtrack ();
   }
 
-  assert (fixed (ilit) || (!level && !val(ilit)));
+  assert (fixed (ilit) || !val(ilit));
 
   const int idx = vidx (ilit);
   assert ((size_t) idx < relevanttab.size ());
