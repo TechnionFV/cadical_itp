@@ -20,7 +20,7 @@ Internal::Internal ()
       ignore (0), external_reason (&external_reason_clause),
       newest_clause (0), force_no_backtrack (false),
       from_propagator (false), ext_clause_forgettable (false),
-      tainted_literal (0), notified (0), probe_reason (0), propagated (0),
+      changed_val (0), notified (0), probe_reason (0), propagated (0),
       propagated2 (0), propergated (0), best_assigned (0),
       target_assigned (0), no_conflict_until (0), unsat_constraint (false),
       marked_failed (true), sweep_incomplete (false),

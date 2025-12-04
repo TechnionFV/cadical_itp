@@ -77,7 +77,7 @@ bool Internal::observed (int ilit) const {
 //
 // Check for unexplained propagations upon disconnecting external propagator
 //
-void Internal::set_tainted_literal () {
+void Internal::set_changed_val () {
   if (!opts.ilb) {
     return;
   }
@@ -86,13 +86,13 @@ void Internal::set_tainted_literal () {
       continue;
     if (var (idx).reason != external_reason)
       continue;
-    if (!tainted_literal) {
-      tainted_literal = idx;
+    if (!changed_val) {
+      changed_val = idx;
       continue;
     }
-    assert (val (tainted_literal));
-    if (var (idx).level < var (tainted_literal).level) {
-      tainted_literal = idx;
+    assert (val (changed_val));
+    if (var (idx).level < var (changed_val).level) {
+      changed_val = idx;
     }
   }
 }

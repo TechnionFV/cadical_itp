@@ -245,7 +245,7 @@ struct Internal {
   bool force_no_backtrack;      // for new clauses with external propagator
   bool from_propagator;         // differentiate new clauses...
   bool ext_clause_forgettable;  // Is new clause from propagator forgettable
-  int tainted_literal;          // used for ILB
+  int changed_val;              // used for ILB
   size_t notified;           // next trail position to notify external prop
   Clause *probe_reason;      // set during probing
   size_t propagated;         // next trail position to propagate
@@ -828,7 +828,7 @@ struct Internal {
   bool observed (int ilit) const;
   bool is_decision (int ilit);
   void check_watched_literal_invariants ();
-  void set_tainted_literal ();
+  void set_changed_val ();
   void renotify_trail_after_ilb ();
   void renotify_trail_after_local_search ();
   void renotify_full_trail ();
