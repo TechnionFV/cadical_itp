@@ -38,14 +38,15 @@ void Internal::add_observed_var (int ilit) {
 //
 // Removing an observed variable should happen only once it is ensured
 // that there is no unexplained propagation in the implication
-// graph involving this variable.
+// graph involving this variable. If the variable is unassigned, it is
+// guaranteed, so no need to backtrack.
 //
 void Internal::remove_observed_var (int ilit) {
-  if (!fixed (ilit) && level) {
+  if (!fixed (ilit) && level && val (ilit)) {
     backtrack ();
   }
 
-  assert (fixed (ilit) || !level);
+  assert (fixed (ilit) || (!level && !val(ilit)));
 
   const int idx = vidx (ilit);
   assert ((size_t) idx < relevanttab.size ());
