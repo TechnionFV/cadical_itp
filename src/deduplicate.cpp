@@ -127,8 +127,10 @@ void Internal::mark_duplicated_binary_clauses_as_garbage () {
           units++;
 
         } else {
-          if (c->garbage)
+          if (c->garbage){
+            j--;
             continue;
+          }
           mark (other);
           stack.push_back (other);
         }
