@@ -27,6 +27,7 @@ void Internal::add_observed_var (int ilit) {
     // about it because it happened on an earlier decision level.
     // To not break the stack-like view of the trail, we simply backtrack to
     // undo this unnotifiable assignment.
+    REQUIRE (!conflict, "can not observe assigned variable during conflict analysis");
     const int assignment_level = var (ilit).level;
     backtrack (assignment_level - 1);
   } else if (level && fixed (ilit)) {
@@ -38,12 +39,14 @@ void Internal::add_observed_var (int ilit) {
 //
 // Removing an observed variable should happen only once it is ensured
 // that there is no unexplained propagation in the implication
-// graph involving this variable. If the variable is unassigned, it is
-// guaranteed, so no need to backtrack.
+// graph involving this variable. To ensure that, the solver might
+// need to backtrack so that the variable becomes unassigned.
 //
 void Internal::remove_observed_var (int ilit) {
   if (!fixed (ilit) && level && val (ilit)) {
-    backtrack ();
+    REQUIRE (!conflict, "can not unobserve assigned variable during conflict analysis");
+    const int assignment_level = var (ilit).level;
+    backtrack (assignment_level - 1);
   }
 
   assert (fixed (ilit) || !val(ilit));

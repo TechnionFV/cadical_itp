@@ -427,11 +427,11 @@ public:
   void add_observed_var (int var);
 
   // Removes the 'observed' flag from the given variable. A variable can be
-  // set unobserved only between solve calls, not during it (to guarantee
-  // that no yet unexplained external propagation involves it).
+  // set unobserved only when it is unassigned, in order to guarantee
+  // that no yet unexplained external propagation involves it.
   //
-  //   require (VALID)
-  //   ensure (VALID)
+  //   require (VALID_OR_SOLVING)
+  //   ensure (VALID_OR_SOLVING)
   //
   void remove_observed_var (int var);
 

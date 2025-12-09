@@ -1075,12 +1075,8 @@ void Solver::connect_external_propagator (ExternalPropagator *propagator) {
   LOG_API_CALL_BEGIN ("connect_external_propagator");
   REQUIRE_VALID_STATE ();
   REQUIRE (propagator, "can not connect zero propagator");
-#ifdef LOGGING
-  if (external->propagator)
-    LOG ("connecting new external propagator (disconnecting previous one)");
-  else
-    LOG ("connecting new external propagator (no previous one)");
-#endif
+  REQUIRE (!external->propagator, "can not connect more than one propagator");
+
   if (external->propagator)
     disconnect_external_propagator ();
 
@@ -1094,13 +1090,7 @@ void Solver::connect_external_propagator (ExternalPropagator *propagator) {
 void Solver::disconnect_external_propagator () {
   LOG_API_CALL_BEGIN ("disconnect_external_propagator");
   REQUIRE_VALID_STATE ();
-
-#ifdef LOGGING
-  if (external->propagator)
-    LOG ("disconnecting previous external propagator");
-  else
-    LOG ("ignoring to disconnect external propagator (no previous one)");
-#endif
+  REQUIRE (external->propagator, "can not disconnect propagator without a connected propagator");
   if (external->propagator)
     external->reset_observed_vars ();
 
@@ -1115,14 +1105,16 @@ void Solver::add_observed_var (int idx) {
   TRACE ("observe", idx);
   REQUIRE_VALID_OR_SOLVING_STATE ();
   REQUIRE_VALID_LIT (idx);
+  REQUIRE (external->propagator, "can not observe variables without a connected propagator");
   external->add_observed_var (idx);
   LOG_API_CALL_END ("observe", idx);
 }
 
 void Solver::remove_observed_var (int idx) {
   TRACE ("unobserve", idx);
-  REQUIRE_VALID_STATE ();
+  REQUIRE_VALID_OR_SOLVING_STATE ();
   REQUIRE_VALID_LIT (idx);
+  REQUIRE (external->propagator, "can not unobserve variables without a connected propagator");
   external->remove_observed_var (idx);
   LOG_API_CALL_END ("unobserve", idx);
 }
@@ -1130,6 +1122,7 @@ void Solver::remove_observed_var (int idx) {
 void Solver::reset_observed_vars () {
   TRACE ("reset_observed_vars");
   REQUIRE_VALID_OR_SOLVING_STATE ();
+  REQUIRE (external->propagator, "can not reset observed variables without a connected propagator");
   external->reset_observed_vars ();
   LOG_API_CALL_END ("reset_observed_vars");
 }

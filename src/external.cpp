@@ -419,7 +419,7 @@ void External::remove_observed_var (int elit) {
   }
   int eidx = abs (elit);
 
-  if (eidx > max_var)
+  if (eidx > max_var) // Ignore call if variable does not exist
     return;
 
   // Ignore call if variable is not observed
