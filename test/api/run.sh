@@ -118,6 +118,7 @@ run traverse
 run cipasir
 run incproof
 run propagate_assumptions
+run example_propagators
 
 if [ "`grep DNTRACING $makefile`" = "" ]
 then
