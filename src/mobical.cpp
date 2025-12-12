@@ -2150,8 +2150,8 @@ public:
         // They are (ideally) are executed already
         if (c->type == Call::LEMMA)
           continue;
-          // if (c->type == Call::CONTINUE)
-          //   continue;
+        // if (c->type == Call::CONTINUE)
+        //   continue;
 #ifdef MOBICAL_MEMORY
         if (c->type == Call::MAXALLOC) {
           memory_bad_alloc = c->val;
@@ -4570,7 +4570,7 @@ void Reader::parse () {
         error ("invalid literal '%d' as argument to 'val'", lit);
       if (second && !parse_int_str (second, val))
         error ("invalid second argument '%s' to 'val'", second);
-      if (second && val != -1 && val != 0 && val != -1)
+      if (second && val != -1 && val != 0 && val != 1)
         error ("invalid result argument '%d' to 'val", val);
       if (second)
         c = new ValCall (lit, val);
