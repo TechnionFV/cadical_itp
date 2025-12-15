@@ -816,6 +816,7 @@ int Solver::call_external_solve_and_check_results (bool preprocess_only) {
     // checking restored clauses does not work (because the clauses are not added)
     checker.set("checkproof", 1);
     checker.set("lrat", 0);
+    checker.set("factorcheck", 0);
     checker.prefix ("checker ");
     copy (checker);
     checker.set("log", 1);

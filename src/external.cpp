@@ -171,6 +171,10 @@ int External::internalize (int elit, bool extension) {
 
 void External::add (int elit) {
   assert (elit != INT_MIN);
+  if (!internal->factorcheckdone && internal->opts.factor && internal->opts.factorcheck && !internal->max_var) {
+    internal->factorcheckdone = true;
+    internalize (1, true);
+  }
   reset_extended ();
 
   bool forgettable = false;
@@ -824,6 +828,7 @@ void External::check_failing () {
   if (internal->opts.log)
     checker->set ("log", true);
 #endif
+  checker->set ("factorcheck", false);
 
   for (const auto lit : assumptions) {
     if (!failed (lit))
