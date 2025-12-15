@@ -339,7 +339,7 @@ void Solver::trace_api_call (const char *s0, const char *s1, int i2) const {
 // (https://github.com/arminbiere/cadical/issues/155) so we fixed it to static
 // atomic.
 //
-static atomic<bool> tracing_api_calls_through_environment_variable_method = false;
+static atomic<bool> tracing_api_calls_through_environment_variable_method {false};
 
 /*------------------------------------------------------------------------*/
 #else // NTRACING
@@ -360,7 +360,7 @@ static atomic<bool> tracing_api_calls_through_environment_variable_method = fals
 // garbage. See also the comment on
 // `tracing_api_calls_through_environment_variable_method` above.
 //
-static atomic<bool> tracing_nb_lidrup_env_var_method = false;
+static atomic<bool> tracing_nb_lidrup_env_var_method {false};
 
 Solver::Solver () {
 
