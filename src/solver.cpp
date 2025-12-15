@@ -1,5 +1,6 @@
 #include "cadical.hpp"
 #include "internal.hpp"
+#include <atomic>
 
 /*------------------------------------------------------------------------*/
 
@@ -334,7 +335,11 @@ void Solver::trace_api_call (const char *s0, const char *s1, int i2) const {
 // which use the solver as library by just setting an environment variable
 // without requiring to change any application code.
 //
-static bool tracing_api_calls_through_environment_variable_method;
+// We initially had static but Mate Soos reported a helgrind error
+// (https://github.com/arminbiere/cadical/issues/155) so we fixed it to static
+// atomic.
+//
+static atomic<bool> tracing_api_calls_through_environment_variable_method = false;
 
 /*------------------------------------------------------------------------*/
 #else // NTRACING
@@ -348,7 +353,14 @@ static bool tracing_api_calls_through_environment_variable_method;
 #endif
 /*------------------------------------------------------------------------*/
 
-static bool tracing_nb_lidrup_env_var_method = false;
+// The global 'tracing_nb_lidrup_env_var_method' flag is used to ensure that
+// only one solver produces a proof file. Otherwise the method to use an
+// environment variable to point to the trace file is bogus, since those
+// different solver instances would all write to the same file producing
+// garbage. See also the comment on
+// `tracing_api_calls_through_environment_variable_method` above.
+//
+static atomic<bool> tracing_nb_lidrup_env_var_method = false;
 
 Solver::Solver () {
 
@@ -391,10 +403,9 @@ Solver::Solver () {
   if (!lidrup_path)
     lidrup_path = getenv ("CADICALLIDRUPTRACE");
   if (lidrup_path) {
-
-    // if (tracing_nb_lidrup_env_var_method)
-    // FATAL ("can not trace LIDRUP of two solver instances "
-    //   "using environment variable 'CADICAL_LIDRUP_TRACE'");
+    if (tracing_nb_lidrup_env_var_method)
+      FATAL ("can not trace LIDRUP of two solver instances "
+        "using environment variable 'CADICAL_LIDRUP_TRACE'");
     // Here we use the solver interface to setup non-binary IDRUP tracing to
     // the defined file. Options set by the user can and will overwrite
     // these settings if neeed be.
