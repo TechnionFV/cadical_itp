@@ -240,10 +240,17 @@ void Internal::deduplicate_all_clauses () {
       assert (!prev->garbage);
       assert (c->redundant || !prev->redundant);
       mark_garbage (c);
+      delete_clause (c);
       subsumed++;
       j--;
     } else
       prev = c;
+  }
+
+  for (; i != clauses.end (); ++i) {
+    Clause *c = *i;
+    assert (c->garbage);
+    delete_clause (c);
   }
 
   if (subsumed) {
