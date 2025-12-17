@@ -215,10 +215,9 @@ void Internal::deduplicate_all_clauses () {
   // by sorting them and sorting the clause w.r.t each other.
   auto start = clauses.begin ();
   auto mid = std::partition (clauses.begin (), clauses.end (), [](Clause *c) {return !c->garbage;});
-  const auto end = clauses.end ();
   std::for_each (start, mid, [](Clause *c) {return sort (c->begin(), c->end ());});
   assert (std::all_of (start, mid, [](Clause *c) {return !c->garbage;}));
-  assert (std::all_of (mid, end, [](Clause *c) {return c->garbage;}));
+  assert (std::all_of (mid, end (clauses), [](Clause *c) {return c->garbage;}));
 
   stable_sort (start, mid, deduplicate_flush_smaller ());
   auto j = start, i = j;
