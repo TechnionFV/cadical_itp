@@ -205,7 +205,7 @@ struct deduplicate_flush_smaller {
 //
 void Internal::deduplicate_all_clauses () {
   assert (!level);
-  reset_watches ();
+  clear_watches ();
 
   mark_satisfied_clauses_as_garbage ();
   garbage_collection ();
@@ -263,8 +263,7 @@ void Internal::deduplicate_all_clauses () {
       "flushed %" PRId64 " subsumed clauses out of %zd", subsumed, clauses.end () - start);
   stats.subsumed += subsumed;
   stats.deduplicatedinit += subsumed;
-
-  init_watches();
+  check_clause_stats();
   connect_watches();
   report ('d', !opts.reportall && !subsumed);
 }
