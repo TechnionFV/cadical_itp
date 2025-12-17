@@ -213,17 +213,19 @@ void Internal::deduplicate_all_clauses () {
   // in order to do the inprocessing inplace, we remove the deleted clauses, put
   // the binary deleted clauses first. Then we work on the non-deleted clauses
   // by sorting them and sorting the clause w.r.t each other.
-  clauses.end () = std::remove_if (clauses.begin (), clauses.end(), [](Clause *c){return c->garbage && c->size !=2;});
-  auto start = std::partition (clauses.begin (), clauses.end (), [](Clause *c) {return c->garbage;});
+  auto start = clauses.begin ();
+  auto mid = std::partition (clauses.begin (), clauses.end (), [](Clause *c) {return !c->garbage;});
   const auto end = clauses.end ();
-  std::for_each (start, end, [](Clause *c) {return sort (c->begin(), c->end ());});
+  std::for_each (start, mid, [](Clause *c) {return sort (c->begin(), c->end ());});
+  assert (std::all_of (start, mid, [](Clause *c) {return !c->garbage;}));
+  assert (std::all_of (mid, end, [](Clause *c) {return c->garbage;}));
 
-  stable_sort (start, clauses.end (), deduplicate_flush_smaller ());
+  stable_sort (start, mid, deduplicate_flush_smaller ());
   auto j = start, i = j;
 
   Clause *prev = 0;
   int64_t subsumed = 0;
-  for (; i != end; i++) {
+  for (; i != mid; i++) {
     Clause *c = *j++ = *i;
     if (!prev || c->size < prev->size) {
       prev = c;
@@ -254,10 +256,7 @@ void Internal::deduplicate_all_clauses () {
     delete_clause (c);
   }
 
-  if (subsumed) {
-    clauses.resize (j - clauses.begin ());
-  } else
-    assert (j == end);
+  clauses.resize (j - clauses.begin ());
 
   ++stats.deduplicatedinitrounds;
   PHASE ("deduplicate-all", stats.deduplicatedinitrounds,
