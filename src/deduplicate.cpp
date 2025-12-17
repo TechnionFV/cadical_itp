@@ -182,7 +182,8 @@ struct deduplicate_flush_smaller {
     for (; i != eoa && j != eob; i++, j++)
       if (*i != *j)
         return *i < *j;
-    const bool smaller = j == eob && i != eoa;
+    const bool smaller = (j == eob && i != eoa) || (j == eob && i == eoa && !a->redundant && b->redundant) ||
+      (j == eob && i == eoa && b->id < a->id);
     return smaller;
   }
 };
