@@ -994,8 +994,7 @@ void Internal::notify_assignments () {
             (fixed (ilit) && !external->ervars[abs (elit)]));
     assigned.push_back (elit);
   }
-
-  external->propagator->notify_assignment (assigned);
+  if (assigned.size()) external->propagator->notify_assignment (assigned);
   return;
 }
 
