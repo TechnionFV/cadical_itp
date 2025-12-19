@@ -1333,8 +1333,9 @@ public:
   // be added literal-by-literal closed with a '0'. Further, the clause must
   // contain the propagated literal.
   //
-  // The clause will be learned as an Irredundant Non-Forgettable Clause
-  // (see below at 'cb_has_external_clause ()' more details about it).
+  // The clause will be learned as an Irredundant Non-Forgettable Clause,
+  // unless the 'are_reasons_forgettable' flag is changed (see below at 
+  // 'cb_has_external_clause ()' more details about it).
   //
   virtual int cb_add_reason_clause_lit (int propagated_lit) {
     (void) propagated_lit;
