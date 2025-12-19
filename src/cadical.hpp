@@ -1314,7 +1314,8 @@ public:
   virtual bool cb_check_found_model (const std::vector<int> &model) = 0;
 
   // Ask the external propagator for the next decision literal. If it
-  // returns '0', the solver makes its own choice.
+  // returns '0', the solver makes its own choice. If it is an already
+  // assigned variable or a non-valid literal, runtime error is shown.
   //
   virtual int cb_decide () { return 0; };
 
