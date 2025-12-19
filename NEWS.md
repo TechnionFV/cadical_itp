@@ -19,6 +19,33 @@ Version 2.2.1
 
 - Deactivated factor for `inccnf` files.
 
+IPASIR-UP Related Changes:
+
+- Many of the requirements of each IPASIR-UP-related solver function have been
+  made explicit, and additional input checks have been added for the arguments 
+  of the related callback functions. Consequently, the solver will terminate 
+  immediately if incorrect input is provided, in contrast to the previous
+  approach where the solver attempted to recover silently from such errors.
+
+- Some examples of implementing external propagators have been added as a
+  file `test/api/example_propagators.cpp`. The code comments demonstrate the 
+  newly introduced error messages that can be triggered by misusing the 
+  IPASIR-UP interface.
+
+- Users can force backtracking (see the `force_backtrack` function) during the
+  `cb_check_found_model` function. Furthermore, the type of the `new_level`
+  argument has been changed from `size_t` to `int`, and calling it with an 
+  incorrect value or in the wrong place triggers an explicit runtime error 
+  message.
+
+- The functions `remove_observed_var` and `reset_observed_vars` are now 
+  permitted during solving, but they potentially trigger additional
+  backtracking steps, so in certain cases it remains unsupported. However,
+  calling them in improper states triggers an explicit runtime error message.
+
+- Some of the explanations and comments around the IPASIR-UP related functions 
+  have been updated and fixed.
+
 Version 2.2.0
 -------------
 
