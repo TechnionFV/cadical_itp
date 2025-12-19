@@ -244,13 +244,14 @@ bool Internal::is_decision (int ilit) {
   return true;
 }
 
-void Internal::force_backtrack (size_t new_level) {
+void Internal::force_backtrack (int new_level) {
   REQUIRE (forced_backt_allowed, "not allowed to force backtrack in that state of the solver.");
-  REQUIRE (level > 0 && new_level < (size_t) level, "only lower levels can be forced to backtrack");
+  REQUIRE (new_level >= 0, "the target level of a forced backtrack must be non-negative.");
+  REQUIRE (level > 0 && new_level < level, "the target level of a forced backtrack must be smaller than the current decision level.");
 
 #ifndef NDEBUG
   LOG ("external propagator forces backtrack to decision level"
-       "%zd (from level %d)",
+       "%d (from level %d)",
        new_level, level);
 #endif
   backtrack (new_level);
@@ -898,9 +899,22 @@ bool Internal::external_check_solution () {
 #endif
     }
 
+    forced_backt_allowed = true;
+    size_t assigned = num_assigned;
+    int level_before = level;
     bool is_consistent =
         external->propagator->cb_check_found_model (etrail);
     stats.ext_prop.ext_cb++;
+    forced_backt_allowed = false;
+
+    if (num_assigned != assigned || level != level_before ||
+      propagated < trail.size ()) {
+      // In case an external forced backtracking was performed, the CDCL
+      // loop needs to continue withouth further checks of the model.
+        trail_changed = true;
+        return !conflict;
+    }
+
     if (is_consistent) {
       LOG ("Found solution is approved by external propagator.");
       return true;
@@ -916,8 +930,8 @@ bool Internal::external_check_solution () {
           "Found solution triggered new clauses from external propagator.");
 
     while (has_external_clause) {
-      int level_before = level;
-      size_t assigned = num_assigned;
+      level_before = level;
+      assigned = num_assigned;
       add_external_clause (0);
       bool trail_changed =
           (num_assigned != assigned || level != level_before ||

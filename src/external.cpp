@@ -492,10 +492,10 @@ bool External::is_decision (int elit) {
   return internal->is_decision (ilit);
 }
 
-void External::force_backtrack (size_t new_level) {
+void External::force_backtrack (int new_level) {
   assert (propagator); // REQ is is in Solver::force_backtrack
 
-  LOG ("force backtrack to level %zd", new_level);
+  LOG ("force backtrack to level %d", new_level);
   internal->force_backtrack (new_level);
 }
 

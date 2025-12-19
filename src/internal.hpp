@@ -820,7 +820,7 @@ struct Internal {
   void notify_assignments ();
   void notify_decision ();
   void notify_backtrack (size_t new_level);
-  void force_backtrack (size_t new_level);
+  void force_backtrack (int new_level);
   int ask_decision ();
   bool ask_external_clause ();
   void add_observed_var (int ilit);
