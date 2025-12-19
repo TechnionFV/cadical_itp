@@ -1,3 +1,18 @@
+Version 2.2.1
+-------------
+
+- New option `deduplicateallinit` to remove duplicated clauses in the first
+  solve call. CaDiCaL 2.1.3 used to do do this in vivification, but does not
+  anymore due to stricter limits (reported in issue #147).
+
+- When activating factor only, new check that you are really calling
+  `declare_more_variables` or `declare_one_more_variable` by reserving the
+  variable number 1.
+
+- Various minor fixes including a memory leak in congruence, incorrect update of
+  minor statistics, some underflows (including issue #150).
+
+
 Version 2.2.0
 -------------
 
