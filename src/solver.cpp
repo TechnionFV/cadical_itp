@@ -626,6 +626,12 @@ bool Solver::configure (const char *name) {
 void Solver::add (int lit) {
   TRACE ("add", lit);
   REQUIRE_VALID_STATE ();
+  if (lit && ((internal->opts.factor && internal->opts.factorcheck == 1) ||  internal->opts.factorcheck == 2))
+    REQUIRE (lit > external->max_var,
+           "undeclared variable %d usage. "
+           "Use `declare_one_more_variable ()` to get the next variable (s) "
+           "or `declare_more_variables (n)` to get the next n variables.",
+           (int) (lit));
   if (lit)
     REQUIRE_VALID_LIT (lit);
   transition_to_steady_state ();

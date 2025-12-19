@@ -5,13 +5,18 @@ Version 2.2.1
   solve call. CaDiCaL 2.1.3 used to do do this in vivification, but does not
   anymore due to stricter limits (reported in issue #147).
 
-- When activating factor only, new check that you are really calling
-  `declare_more_variables` or `declare_one_more_variable` by reserving the
-  variable number 1.
+- New optional stricter API checking:
+    * When activating factor only (off by default), you need to use
+      `declare_more_variables` or `declare_one_more_variable` in order to use
+      new variables. 
+      
+    * If you want to prepare without activating factor, you can
+      set `factorcheck` to 2.
 
 - Various minor fixes including a memory leak in congruence, incorrect update of
   minor statistics, some underflows (including issue #150).
 
+- Deactivate factor for inccnf files.
 
 Version 2.2.0
 -------------
