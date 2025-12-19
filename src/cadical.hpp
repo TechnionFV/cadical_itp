@@ -1323,6 +1323,8 @@ public:
   // under the current assignment. It returns either a literal to be
   // propagated or '0', indicating that there is no external propagation
   // under the current assignment.
+  // In case the returned literal is not an observed variable, a runtime
+  // error is shown.
   //
   virtual int cb_propagate () { return 0; };
 
