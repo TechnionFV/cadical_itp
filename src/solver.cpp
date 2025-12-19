@@ -1558,6 +1558,7 @@ bool Solver::is_decision (int lit) {
 void Solver::force_backtrack (size_t new_level) {
   TRACE ("force_backtrack", new_level);
   REQUIRE_VALID_OR_SOLVING_STATE ();
+  REQUIRE (external->propagator, "can not force backtrack without a connected propagator");
   external->force_backtrack (new_level);
 }
 
