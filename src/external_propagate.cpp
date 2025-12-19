@@ -516,6 +516,7 @@ void Internal::add_external_clause (int propagated_elit,
                                     bool no_backtrack) {
   assert (original.empty ());
   int elit = 0;
+  bool propagated_lit_found = false;
 
   if (propagated_elit) {
     // Propagation reason clauses are by default assumed to be forgettable
@@ -527,8 +528,11 @@ void Internal::add_external_clause (int propagated_elit,
     LOG ("add external reason of propagated lit: %d", propagated_elit);
 #endif
     elit = external->propagator->cb_add_reason_clause_lit (propagated_elit);
+    if (elit == propagated_elit) propagated_lit_found = true;
   } else
     elit = external->propagator->cb_add_external_clause_lit ();
+
+  REQUIRE (!elit || (abs (elit) < external->is_observed.size() && external->is_observed[abs (elit)]), "external (reason) clause must contain only observed variables.");
 
   // we need to be build a new LRAT chain if we are already in the middle of
   // the analysis (like during failed assumptions)
@@ -546,15 +550,20 @@ void Internal::add_external_clause (int propagated_elit,
   force_no_backtrack = no_backtrack;
   from_propagator = true;
   while (elit) {
-    assert (external->is_observed[abs (elit)]);
     external->add (elit);
-    if (propagated_elit)
+    if (propagated_elit) {  
       elit =
           external->propagator->cb_add_reason_clause_lit (propagated_elit);
-    else
+      if (elit == propagated_elit) propagated_lit_found = true;
+    } else
       elit = external->propagator->cb_add_external_clause_lit ();
+
+    REQUIRE (!elit || (abs (elit) < external->is_observed.size() && external->is_observed[abs (elit)]), "external (reason) clause must contain only observed variables.");
   }
   external->add (elit);
+
+  REQUIRE (!propagated_elit || propagated_lit_found, "external reason clause must contain the propagated literal.");
+
   assert (original.empty ());
   assert (clause.empty ());
   force_no_backtrack = false;
@@ -705,7 +714,7 @@ void Internal::explain_external_propagations () {
 Clause *Internal::learn_external_reason_clause (int ilit,
                                                 int falsified_elit,
                                                 bool no_backtrack) {
-  assert (external->propagator);
+  assert (external->propagator); // REQ is defined by not allowing unobserving during conflict
   // we cannot modify clause during analysis
   auto clause_tmp = std::move (clause);
 
@@ -1080,7 +1089,7 @@ int Internal::ask_decision () {
     return 0;
   LOG ("external propagator proposes decision: %d", elit);
 
-  REQUIRE (external->is_observed[abs (elit)], "external decisions are only allowed over observed variables.");
+  REQUIRE (abs (elit) < external->is_observed.size() && external->is_observed[abs (elit)], "external decisions are only allowed over observed variables.");
   
   assert (external->is_observed[abs (elit)]);
   
