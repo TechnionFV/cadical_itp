@@ -286,6 +286,9 @@ bool Internal::external_propagate () {
     notify_assignments ();
 
     int elit = external->propagator->cb_propagate ();
+
+    REQUIRE(!elit || (abs (elit) < external->is_observed.size() && external->is_observed[abs (elit)]), "external propagations are only allowed over observed variables.");
+
     stats.ext_prop.ext_cb++;
     stats.ext_prop.eprop_call++;
     while (elit) {
