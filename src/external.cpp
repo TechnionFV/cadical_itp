@@ -422,7 +422,8 @@ void External::remove_observed_var (int elit) {
   if (eidx > max_var)
     return;
 
-  if ((size_t) eidx <= is_observed.size ())
+  // Ignore call if variable is not observed
+  if ((size_t) eidx >= is_observed.size ())
     return;
   if (is_observed[eidx]) {
     // Follow opposite order of add_observed_var, first remove internal
