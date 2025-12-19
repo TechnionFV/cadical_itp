@@ -1076,10 +1076,11 @@ int Internal::ask_decision () {
   if (!elit)
     return 0;
   LOG ("external propagator proposes decision: %d", elit);
-  assert (external->is_observed[abs (elit)]);
-  if (!external->is_observed[abs (elit)])
-    return 0;
 
+  REQUIRE (external->is_observed[abs (elit)], "external decisions are only allowed over observed variables.");
+  
+  assert (external->is_observed[abs (elit)]);
+  
   int ilit = external->e2i[abs (elit)];
   if (elit < 0)
     ilit = -ilit;
@@ -1090,12 +1091,8 @@ int Internal::ask_decision () {
        "%d, fixed: %d, val: %d)",
        elit, ilit, fixed (ilit), val (ilit));
 
-  if (fixed (ilit) || val (ilit)) {
-    LOG ("Proposed decision variable is already assigned, falling back to "
-         "internal decision.");
-    return 0;
-  }
-
+  REQUIRE (!fixed (ilit) && !val (ilit), "external decisions are only allowed over unassigned variables.");
+       
   return ilit;
 }
 
