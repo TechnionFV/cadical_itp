@@ -416,7 +416,7 @@ public:
   // propagator. External propagation, clause addition during search and
   // notifications are all over these observed variables.
   // A variable can not be observed without having an external propagator
-  // connected. Observed variables are "frozen" internally, and so
+  // already connected. Observed variables are "frozen" internally, and so
   // inprocessing will not consider them as candidates for elimination.
   // An observed variable is allowed to be a fresh variable and it can be
   // added also during solving.
@@ -453,7 +453,7 @@ public:
   bool is_decision (int lit);
 
   // Force solve to backtrack to certain decision level. Can be called only
-  // during 'cb_decide' and 'cb_check_final_model' of a connected External 
+  // during 'cb_decide' and 'cb_check_final_model' of a connected External
   // Propagator. Invoking in any other time will trigger a runtime error.
   // Otherwise, the External Propagator will be notified about the backtrack
   // via 'notify_backtrack' and the search continues.
@@ -491,16 +491,18 @@ public:
   bool constraint_failed ();
 
   // Collects a subset of those literals that are implied by unit
-  // propagation by assuming the currently defined (potentially empty) set
-  // of assumptions (see IPASIR assume(lit)) function. In case unit
-  // propgation over the defined set of assumptions (or over the clause
-  // database on its own) leads to conflict, the function returns 20 and the
-  // content of 'implicants' is undefined. In case unit propagation happens
-  // to satisfy all the clauses (not probable, but not impossible), the
-  // function returns 10 and 'implicants' is a solution of the current
-  // formula under the current assumptions (after solution reconstruction).
-  // In any other case, the function returns 0 (indicating 'UNKNOWN') and
-  // 'implicants' lists the non-conflicting current value of the trail.
+  // propagation by assuming the currently defined (potentially empty)
+  // set of assumptions (see IPASIR assume(lit)) function. In case
+  // unit propagation over the defined set of assumptions (or over the
+  // clause database on its own) leads to conflict, the function
+  // returns 20 and the content of 'implicates' is undefined. In most
+  // other case, the function returns 0 (indicating 'UNKNOWN') and
+  // 'implicates' lists the non-conflicting current value of the
+  // trail. If ILB is off, in the rare case where where no decision
+  // was needed and propagation assigned all literals, then the
+  // 'implicates' lists will contain all assigned literals, which is a
+  // model. If ILB is on, propagate might also return SAT. In this
+  // case, 'implicates' will still only contain the implied literals.
 
   // Returns
   //
@@ -517,6 +519,7 @@ public:
   //
   int propagate ();
 
+  // See the comment for propagate above.
   //
   //   require (INCONCLUSIVE)
   //   ensure (INCONCLUSIVE)
@@ -569,11 +572,11 @@ public:
   //
   int status () const {
     if (_state == SATISFIED)
-      return 10;
+      return SATISFIABLE;
     else if (_state == UNSATISFIED)
-      return 20;
+      return UNSATISFIABLE;
     else
-      return 0;
+      return UNKNOWN;
   }
 
   /*----------------------------------------------------------------------*/
@@ -651,9 +654,8 @@ public:
   //
   int declare_more_variables (int number_of_additional_new_vars);
 
-  // Increase the maximum variable index by one. This is a specialized
-  // version of declare_more_variables.
-
+  // Returns the next fresh variable that was not used internally.
+  //
   int declare_one_more_variable ();
 
   // Get the value of some statistics or -1 if the statistics does not
@@ -874,7 +876,7 @@ public:
 
   //------------------------------------------------------------------------
 
-  // Enables clausal proof tracing in DRAT format and returns 'true' if
+  // Enables clausal proof tracing in various format and returns 'true' if
   // successfully opened for writing.  Writing proofs has to be enabled
   // before calling 'solve', 'add' and 'dimacs', that is in state
   // 'CONFIGURING'.  Otherwise only partial proofs would be written.
@@ -882,7 +884,7 @@ public:
   //   require (CONFIGURING)
   //   ensure (CONFIGURING)
   //
-  bool trace_proof (FILE *file, const char *name); // Write DRAT proof.
+  bool trace_proof (FILE *file, const char *name); // Write proof.
   bool trace_proof (const char *path);             // Open & write proof.
 
   // Flushing the proof trace file eventually calls 'fflush' on the actual
@@ -946,13 +948,13 @@ public:
   // conflict.  In case the solver is in 'UNKNOWN', it will collect the
   // currently "entrailed" literals and add them to the proof.
   //
-  //   require (SATISFIED || UNSATISFIED || UNKNOWN)
-  //   ensure (SATISFIED || UNSATISFIED || UNKNOWN)
+  //   require (SATISFIED | UNSATISFIED | UNKNOWN)
+  //   ensure (SATISFIED | UNSATISFIED | UNKNOWN)
   //
   void conclude ();
 
-  // Disconnect proof tracer. If this is not done before deleting
-  // the tracer will be deleted. Returns true if successful.
+  // Disconnect proof tracer. Also done upon deletion of the solver
+  // instance. Returns true if successful.
   //
   //   require (VALID)
   //   ensure (VALID)
@@ -967,6 +969,7 @@ public:
 
   static void configurations (); // Print configuration usage options.
 
+  // Prints statistics to stdout
   //   require (!DELETING)
   //   ensure (!DELETING)
   //
@@ -1334,7 +1337,7 @@ public:
   // contain the propagated literal.
   //
   // The clause will be learned as an Irredundant Non-Forgettable Clause,
-  // unless the 'are_reasons_forgettable' flag is changed (see below at 
+  // unless the 'are_reasons_forgettable' flag is changed (see below at
   // 'cb_has_external_clause ()' more details about it).
   //
   virtual int cb_add_reason_clause_lit (int propagated_lit) {
