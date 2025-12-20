@@ -1301,24 +1301,28 @@ public:
   // before decision number new_level are kept, all other (at the end
   // of stack) are removed.
   //
-  // In particular, when backtracking to level '0', no decision is left and
-  // all assignment done before the first decision are kept.  The number
-  // will always be lower than the number of decisions on the trail, so
-  // backtracking will always have an effect.
+  // In particular, when backtracking to level '0', no decision is
+  // left and only assignments done before the first decision
+  // (literals that have to be true in all models of the formula) are
+  // kept.  The number will always be lower than the number of
+  // decisions on the trail, so backtracking will always have an
+  // effect.
   //
   virtual void notify_new_decision_level () = 0;
   virtual void notify_backtrack (size_t new_level) = 0;
 
-  // Check by the external propagator the found complete solution (after
-  // solution reconstruction). If it returns false, the propagator should
-  // provide an external clause during the next callback or introduce new
+  // Check by the external propagator the found complete solution
+  // (after solution reconstruction). If it returns false, the
+  // propagator should needs to explain why, either by providing an
+  // external clause during the next callback or introduce new
   // observed variables during this callback.
   //
   virtual bool cb_check_found_model (const std::vector<int> &model) = 0;
 
   // Ask the external propagator for the next decision literal. If it
   // returns '0', the solver makes its own choice. If it is an already
-  // assigned variable or a non-valid literal, runtime error is shown.
+  // assigned variable or a non-valid literal (e.g., not observed), a
+  // runtime error is triggered.
   //
   virtual int cb_decide () { return 0; };
 
@@ -1327,7 +1331,7 @@ public:
   // propagated or '0', indicating that there is no external propagation
   // under the current assignment.
   // In case the returned literal is not an observed variable, a runtime
-  // error is shown.
+  // error is triggered.
   //
   virtual int cb_propagate () { return 0; };
 
@@ -1422,7 +1426,8 @@ public:
 // The witness literals can be used to extend and fix an assignment on the
 // remaining clauses to satisfy the clauses on the extension stack too.
 //
-// All derived units of non-frozen variables are included too.
+// All derived units of non-frozen variables are included too, but
+// not the units for frozen literals.
 //
 // If 'witness' returns false traversal aborts early.
 
