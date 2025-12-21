@@ -5578,9 +5578,6 @@ void Closure::produce_ite_merge_lhs_then_else_reasons (
       if (rewritting_then && repr_lit_to_merge == repr_lhs) {
         LOG ("t=-lhs/e=lhs from rewriting then");
         learn_units = true;
-        unsimplified.push_back (-cond_lit);
-        LRAT_ID id_unit = simplify_and_add_to_proof_chain (unsimplified);
-        unsimplified.clear ();
         g->pos_lhs_ids[idx1].clause = produce_rewritten_clause_lrat (
             g->pos_lhs_ids[idx1].clause, g->lhs, false);
         g->pos_lhs_ids[idx2].clause = produce_rewritten_clause_lrat (
@@ -5589,6 +5586,9 @@ void Closure::produce_ite_merge_lhs_then_else_reasons (
         assert (g->pos_lhs_ids[idx2].clause);
         lrat_chain.push_back (g->pos_lhs_ids[idx1].clause->id);
         lrat_chain.push_back (g->pos_lhs_ids[idx2].clause->id);
+        unsimplified.push_back (-cond_lit);
+        LRAT_ID id_unit = simplify_and_add_to_proof_chain (unsimplified);
+        unsimplified.clear ();
         reasons_unit = {id_unit};
         return;
       }
