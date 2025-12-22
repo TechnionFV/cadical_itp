@@ -194,7 +194,10 @@ executed_last=no
 executed_begin=no
 executed_end=no
 
-echo "building and testing configurations 0 .. $end"
+configurations=`expr $end + 1`
+
+echo "building and testing $configurations configurations 0..$end"
+
 if [ $begin = 0 ]
 then
   echo "starting with default configuration $begin"
@@ -206,14 +209,8 @@ i=$begin
 while [ $i -le $end ]
 do
   run_configuration $i
-  if [ $i = $begin ]
-  then
-    executed_begin=yes
-  fi
-  if [ $i = $end ]
-  then
-    executed_end=yes
-  fi
+  test $i = $begin && executed_begin=yes
+  test $i = $end && executed_end=yes
   i=`expr $i + 1`
   if [ $i -gt $end ]
   then
