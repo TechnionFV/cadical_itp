@@ -67,9 +67,9 @@ run () {
   else
     configureoptions=" $*"
   fi
-  echo "[$running] $environment$configure$configureoptions && make$makeoptions$makeflags test clean"
+  echo "[$running] $environment$configure$configureoptions && make$makeoptions$makeflags && make$makeoptions$makeflags test && make$makeoptions$makeflags clean"
   $configure$configureoptions $* >/dev/null 2>&1
-  test $? = 0 || die "configuration $running failed."
+  test $? = 0 || die "configuration $running failed (run '$configure$configureoptions $*' to investigate)"
   make$makeoptions$makeflags >/dev/null 2>&1
   test $? = 0 || die "building configuration $running failed (run 'make' to investigate)"
   make$makeoptions$makeflags test >/dev/null 2>&1
