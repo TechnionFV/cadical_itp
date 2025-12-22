@@ -1713,7 +1713,6 @@ struct DisconnectCall : public Call {
     if (mp)
       mp->remove_new_observed_var ();
     s->disconnect_fixed_listener ();
-    s->disconnect_external_propagator ();
     if (mp) {
       delete mp;
       mobical.mock_pointer = 0;
