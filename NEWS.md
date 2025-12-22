@@ -55,7 +55,7 @@ User Facing Changes:
   there is now only `ilb` with values `0`, `1` (= only assumptions), and `2`
   (= full reuse).
 
-- The tracer now allows to get equivalent literals during solving
+- The tracer now allows to get equivalent literals during solving.
 
 - Support for compilation of shared library via `./configure -shared`.
 
@@ -65,15 +65,15 @@ User Facing Changes:
 - The `lucky` procedure can now handle assumptions (but not the external
   propagator). Set `luckyassumptions` to false if you do not want that.
 
-- `val` now has a Boolean as second argument that checks that the
-  variables was declared. The default value is the old behavior,
-  but this can be useful for debugging applications.
+- The `val` function now has a Boolean as second argument that checks that
+  the variables was declared. The default is the old behavior.  The new
+  behavior can be useful for debugging applications.
 
-- Fixed `VeriPB' compatibility issues.
+- Fixed `VeriPB` compatibility issues.
 
 - The `get_entrailed_literals` function became **deprecated** and is going to be
-  replaced by the new `implied` function, with the same sematics, except
-  that is now also allowed in the state 'SATISFIED' state. The next
+  replaced by the new `implied` function, with the same semantics, except
+  that it is now also allowed in the 'SATISFIED' state. The next
   major release will remove `get_entrailed_literals`.
 
 - The `reserve` function became **deprecated** and is going to be replaced 
@@ -86,7 +86,7 @@ User Facing Changes:
   next major release will (A) enable `factor` by default and accordingly
   (B) require the usage of `var` resp. `declare_more_variables` for adding
   new variables in incremental solving (and keeping `factor` enabled).
-  This **breaking-change** is post-poned until the next major release.
+  This **breaking-change** is postponed until the next major release.
 
 New and Improved Techniques:
 
@@ -132,7 +132,7 @@ New and Improved Techniques:
 - Improved locals search walk algorithm. We have also ported the version
   from Kissat (relying on full-occurrence list), deactivated by default.
 
-- Binary backone similarly to `Kissat`.
+- Binary backbone similarly to `Kissat`.
 
 Version 2.1.3
 -------------
@@ -345,7 +345,7 @@ Version 1.7.3
   supported.
  
 - Reworked options for proof tracing to be less confusing.  Support for
-  DRAT, LRAT, FRAT and VeriPB (with or without antecedents).
+  `DRAT`, `LRAT`, `FRAT` and `VeriPB` (with or without antecedents).
 
 Version 1.7.2
 -------------
@@ -356,7 +356,7 @@ Version 1.7.2
 Version 1.7.1
 -------------
 
-- Added support for VeriPB proofs (--lrat --lratveripb).
+- Added support for `VeriPB` proofs (option `--lrat --lratveripb`).
 
 - Various fixes: LRAT proofs for constrain (which previously were not traced
   correctly); internal-external mapping issues for LRAT (worked for user
@@ -370,7 +370,8 @@ Version 1.7.0
 
 - Added native LRAT support.
 
-Version 1.6.0 -------------
+Version 1.6.0
+-------------
 
 - Added IPASIR-UP functions to the API to support external propagation,
   external decisions, and clause addition during search.  For more details
