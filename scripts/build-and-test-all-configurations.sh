@@ -182,15 +182,21 @@ run_configuration () {
     28) run -shared -p;;
     29) run -shared -p -m32;;
 
-    # sanitizer configurations
+    # Sanitizer configurations
+
     30) run -a -fsanitize=address -fsanitize=undefined;;
     31) run -a -p -fsanitize=address -fsanitize=undefined;;
     32) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wcast-align -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing=3 -fno-common -fstrict-aliasing -Wno-format-nonliteral
-      executed_last=yes;; # keep this as part of last configuration
+
+      executed_last=yes # Keep this as part of last configuration!
+
+      ;; 
 
     *) fatal "iterating over invalid configuration '$1'";;
   esac
 }
+
+############################################################################
 
 executed_last=no
 executed_begin=no
@@ -208,18 +214,17 @@ else
 fi
 
 i=$begin
-while [ $i -le $end ]
+while true
 do
   run_configuration $i
   test $i = $begin && executed_begin=yes
   test $i = $end && executed_end=yes
-  i=`expr $i + 1`
-  if [ $i -gt $end ]
-  then
-    i=0
-  fi
   test $executed_begin = yes -a $executed_end = yes && break
+  i=`expr $i + 1`
+  [ $i = $end ] && i=0
 done
+
+############################################################################
 
 test $executed_last = no && fatal "last configuration not executed"
 
