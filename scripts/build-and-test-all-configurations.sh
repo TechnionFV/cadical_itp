@@ -12,9 +12,10 @@ usage: $scriptname [ <option> ]
 
 where '<option>' is one of the following:
 
--h        print this command line option summary
--j[ ]<n>  number '<n>' of parallel threads (passed to 'makefile')
--s[ ]<n>  number '<n>' of starting configuration
+-h         print this command line option summary
+-j[ ]<n>   number '<n>' of parallel threads (passed to 'makefile')
+-s[ ]<n>   number '<n>' of starting configuration
+-m | -m32  include 32 bit tests
 EOF
 exit 0
 }
@@ -58,7 +59,21 @@ fi
 
 ############################################################################
 
+ok=0
+skipped=0
 running="unknown"
+
+skip() {
+  test $m32 = yes && return 1
+  while [ $# -gt 0 ]
+  do
+    case "$1" in
+      -m32) return 0;;
+    esac
+    shift
+  done
+  return 1
+}
 
 run () {
   if [ "$*" = "" ]
@@ -67,23 +82,30 @@ run () {
   else
     configureoptions=" $*"
   fi
-  echo "[$running] $environment$configure$configureoptions && make$makeoptions$makeflags && make$makeoptions$makeflags test && make$makeoptions$makeflags clean"
-  $configure$configureoptions $* >/dev/null 2>&1
-  test $? = 0 || die "configuration $running failed (run '$configure$configureoptions $*' to investigate)"
-  make$makeoptions$makeflags >/dev/null 2>&1
-  test $? = 0 || die "building configuration $running failed (run 'make' to investigate)"
-  make$makeoptions$makeflags test >/dev/null 2>&1
-  test $? = 0 || die "testing configuration $running failed (run 'make test' to investigate)"
-  make$makeoptions$makeflags clean >/dev/null 2>&1
-  test $? = 0 || die "cleaning configuration $running failed (run 'make clean' to investigate)"
-  ok=`expr $ok + 1`
+  if skip $*
+  then
+    echo "[$running] $environment$configure$configureoptions # skipped"
+    skipped=`expr $skipped + 1`
+  else
+    echo "[$running] $environment$configure$configureoptions && make$makeoptions$makeflags && make$makeoptions$makeflags test && make$makeoptions$makeflags clean"
+    $configure$configureoptions $* >/dev/null 2>&1
+    test $? = 0 || die "configuration $running failed (run '$configure$configureoptions $*' to investigate)"
+    make$makeoptions$makeflags >/dev/null 2>&1
+    test $? = 0 || die "building configuration $running failed (run 'make' to investigate)"
+    make$makeoptions$makeflags test >/dev/null 2>&1
+    test $? = 0 || die "testing configuration $running failed (run 'make test' to investigate)"
+    make$makeoptions$makeflags clean >/dev/null 2>&1
+    test $? = 0 || die "cleaning configuration $running failed (run 'make clean' to investigate)"
+    ok=`expr $ok + 1`
+  fi
 }
 
 ############################################################################
 
-ok=0
 begin=0
 end=32
+
+m32=no
 
 while [ $# -gt 0 ]
 do
@@ -91,11 +113,6 @@ do
     -h) usage;;
     -j[1-9]|-j[1-9][0-9]*)
        makeflags=" -j`echo @$1 |sed -e 's,@-j,,'`"
-       ;;
-    -s[0-9]|-s[1-9][0-9])
-       begin=`echo "@$1" |sed -e 's,@-s,,'`
-       test $begin -gt $end && \
-         die "invalid start configuration '$1' (above end '$end')"
        ;;
     -j) 
         shift
@@ -105,6 +122,12 @@ do
 	  *) die "invalid argument in '-j $1'" ;;
 	esac
 	;;
+    -m|-m32) m32=yes;;
+    -s[0-9]|-s[1-9][0-9])
+       begin=`echo "@$1" |sed -e 's,@-s,,'`
+       test $begin -gt $end && \
+         die "invalid start configuration '$1' (above end '$end')"
+       ;;
     -s) 
         shift
 	test $# = 0 && die "argument to '-s' missing'"
@@ -124,8 +147,10 @@ done
 
 ############################################################################
 
-run_configuration () {
-  running="$1"
+map_and_run () {
+
+  running="$1" # such that 'run' knows the configuration number
+
   case $1 in	# default configuration (depends on 'MAKEFLAGS'!)
     0) run -p;;	# then check default pedantic first
 
@@ -188,7 +213,7 @@ run_configuration () {
     31) run -a -p -fsanitize=address -fsanitize=undefined;;
     32) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wcast-align -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing=3 -fno-common -fstrict-aliasing -Wno-format-nonliteral
 
-      executed_last=yes # Keep this as part of last configuration!
+      executed_last_configuration=yes # Keep this as part of last configuration!
 
       ;; 
 
@@ -198,11 +223,10 @@ run_configuration () {
 
 ############################################################################
 
-executed_last=no
-executed_begin=no
-executed_end=no
 
+built_and_tested=0;
 configurations=`expr $end + 1`
+executed_last_configuration=no
 
 echo "building and testing ${BOLD}$configurations${NORMAL} configurations 0..$end"
 
@@ -214,12 +238,10 @@ else
 fi
 
 i=$begin
-while true
+while [ $built_and_tested -lt $configurations ]
 do
-  run_configuration $i
-  test $i = 0 && executed_begin=yes
-  test $i = $end && executed_end=yes
-  test $executed_begin = yes -a $executed_end = yes && break
+  map_and_run $i
+  built_and_tested=`expr $built_and_tested + 1`
   i=`expr $i + 1`
   [ $i -gt $end ] && i=0
 done
@@ -228,4 +250,9 @@ done
 
 test $executed_last = no && fatal "last configuration not executed"
 
-echo "successfully built and tested ${GOOD}${ok}${NORMAL} configurations"
+if [ $skipped = 0 ]
+then
+  echo "successfully built and tested ${GOOD}${ok}${NORMAL} configurations (none skipped)"
+else
+  echo "successfully built and tested ${GOOD}${ok}${NORMAL} configurations ($skipped skipped)"
+fi
