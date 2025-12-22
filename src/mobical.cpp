@@ -788,12 +788,17 @@ public:
         new_observed_variables.size ()) {
       int new_var = add_new_observed_var ();
       if (new_var) {
-        MLOG ("cb_decide returns " << -1 * new_var << std::endl);
+        MLOG ("cb_decide returns new variable " << -1 * new_var << std::endl);
         return -1 * new_var;
       }
     }
 
     decision_loc++;
+    size_t lit_sum = 0;  // sum of variables of satisfied observed literals
+    int lowest_lit = 0;  // the lowest satisfied observed literal
+    int highest_lit = 0; // the highest satisfied observed literal
+    const std::set<int> &satisfied_literals =
+        current_observed_satisfied_set (lit_sum, lowest_lit, highest_lit);
 
     if ((decision_loc % observed_variables.size ()) == 0) {
       if (!(observed_variables.size () % 11)) {
@@ -801,10 +806,30 @@ public:
         s->force_backtrack (observed_variables.size () % 5);
       }
       size_t n = decision_loc / observed_variables.size ();
+      auto is_unassigned = [satisfied_literals](int lit) {
+        return
+          satisfied_literals.find (lit) == satisfied_literals.end () &&
+          satisfied_literals.find (-lit) == satisfied_literals.end ();
+      };
       if (n < observed_variables.size ()) {
-        int lit = *std::next (observed_variables.begin (), n);
-        MLOG ("cb_decide returns " << -1 * lit << std::endl);
-        return -1 * lit;
+        // find the n-th unassigned variable from the beginning of observe
+        auto it = observed_variables.begin ();
+        size_t incr = 0;
+        while (incr < n && it != observed_variables.end ()) {
+          if (is_unassigned (*it)) {
+            ++n;
+          }
+          ++it;
+        }
+        if (it != observed_variables.end () &&
+          is_unassigned (*it)) {
+          int lit = *it;
+          MLOG ("cb_decide returns unassigned" << -1 * lit << std::endl);
+          return -1 * lit;
+        } else {
+          MLOG ("cb_decide returns 0\n");
+          return 0;
+        }
       } else {
         MLOG ("cb_decide returns 0" << std::endl);
         return 0;
