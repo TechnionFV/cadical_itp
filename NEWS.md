@@ -1,6 +1,9 @@
 Version 2.2.1
 -------------
 
+- Fixed shared compilation build for C part ('kitten.o') to support both
+  the static and shared binaries as well as libraries with '--shared'.
+
 - Improved script to build and test all configurations.
 
 - New option `deduplicateallinit` to remove duplicated clauses in the first
