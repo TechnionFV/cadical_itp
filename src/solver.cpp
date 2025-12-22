@@ -1091,13 +1091,13 @@ void Solver::disconnect_external_propagator () {
   LOG_API_CALL_BEGIN ("disconnect_external_propagator");
   REQUIRE_VALID_STATE ();
   REQUIRE (external->propagator, "can not disconnect propagator without a connected propagator");
-  if (external->propagator)
-    external->reset_observed_vars ();
+  external->reset_observed_vars ();
 
   external->propagator = 0;
   internal->set_changed_val ();
   internal->external_prop = false;
   internal->external_prop_is_lazy = true;
+  internal->notified = 0;
   LOG_API_CALL_END ("disconnect_external_propagator");
 }
 
