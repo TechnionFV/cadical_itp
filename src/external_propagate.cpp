@@ -582,6 +582,9 @@ void Internal::add_external_clause (int propagated_elit,
 
   REQUIRE (!propagated_elit || propagated_lit_found,
            "external reason clause must contain the propagated literal.");
+#ifdef NCONTRACTS
+  (void) propagated_lit_found;
+#endif
 
   assert (original.empty ());
   assert (clause.empty ());
