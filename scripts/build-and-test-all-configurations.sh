@@ -198,7 +198,7 @@ executed_end=no
 
 configurations=`expr $end + 1`
 
-echo "building and testing $configurations configurations 0..$end"
+echo "building and testing ${BOLD}$configurations${NORMAL} configurations 0..$end"
 
 if [ $begin = 0 ]
 then
