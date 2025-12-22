@@ -194,7 +194,7 @@ executed_last=no
 executed_begin=no
 executed_end=no
 
-echo "configurations 0..$end"
+echo "building and testing configurations 0 .. $end"
 if [ $begin = 0 ]
 then
   echo "starting with default configuration $begin"
