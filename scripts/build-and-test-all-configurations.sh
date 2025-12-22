@@ -248,7 +248,8 @@ done
 
 ############################################################################
 
-test $executed_last = no && fatal "last configuration not executed"
+test $executed_last_configuration = no && \
+  fatal "last configuration not executed"
 
 if [ $skipped = 0 ]
 then
