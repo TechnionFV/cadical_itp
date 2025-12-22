@@ -71,11 +71,11 @@ run () {
   $configure$configureoptions $* >/dev/null 2>&1
   test $? = 0 || die "configuration $running failed."
   make$makeoptions$makeflags >/dev/null 2>&1
-  test $? = 0 || die "building configuration $running failed."
+  test $? = 0 || die "building configuration $running failed (run 'make' to investigate)"
   make$makeoptions$makeflags test >/dev/null 2>&1
-  test $? = 0 || die "testing configuration $running failed."
+  test $? = 0 || die "testing configuration $running failed (run 'make test' to investigate)"
   make$makeoptions$makeflags clean >/dev/null 2>&1
-  test $? = 0 || die "cleaning configuration $running failed."
+  test $? = 0 || die "cleaning configuration $running failed (run 'make clean' to investigate)"
   ok=`expr $ok + 1`
 }
 
@@ -193,6 +193,14 @@ run_configuration () {
 executed_last=no
 executed_begin=no
 executed_end=no
+
+echo "configurations 0..$end"
+if [ $begin = 0 ]
+then
+  echo "starting with default configuration $begin"
+else
+  echo "starting with non-default configuration $begin (and then wrapping around)"
+fi
 
 i=$begin
 while [ $i -le $end ]
