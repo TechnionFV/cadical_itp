@@ -217,11 +217,11 @@ i=$begin
 while true
 do
   run_configuration $i
-  test $i = $begin && executed_begin=yes
+  test $i = 0 && executed_begin=yes
   test $i = $end && executed_end=yes
   test $executed_begin = yes -a $executed_end = yes && break
   i=`expr $i + 1`
-  [ $i = $end ] && i=0
+  [ $i -gt $end ] && i=0
 done
 
 ############################################################################
