@@ -1012,7 +1012,7 @@ class Mobical : public Handler {
   friend struct FlippableCall;
   friend struct MeltCall;
   friend class MockPropagator;
-  friend class ResetCall;
+  friend struct ResetCall;
   friend struct ConnectCall;
   friend struct DisconnectCall;
 
