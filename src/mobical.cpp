@@ -1714,9 +1714,11 @@ struct DisconnectCall : public Call {
       mp->remove_new_observed_var ();
     s->disconnect_fixed_listener ();
     if (mp) {
+      s->disconnect_external_propagator ();
       delete mp;
       mobical.mock_pointer = 0;
     }
+    assert (!s->external->propagator);
     (void) (extendmap);
   }
   void print (ostream &o) { o << "disconnect mock-propagator" << endl; }
