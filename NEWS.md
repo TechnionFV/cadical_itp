@@ -1,6 +1,8 @@
 Version 2.2.1
 -------------
 
+- Improved script to build and test all configurations.
+
 - New option `deduplicateallinit` to remove duplicated clauses in the first
   solve call. CaDiCaL 2.1.3 used to do do this in vivification, but does not
   anymore due to stricter limits (reported in issue #147).
