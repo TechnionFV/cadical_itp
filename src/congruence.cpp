@@ -415,16 +415,6 @@ struct sort_literals_by_var_smaller_except {
   bool operator() (const int &a, const int &b) const {
     return sort_literals_by_var_rank_except (internal, lhs, except) (a) <
            sort_literals_by_var_rank_except (internal, lhs, except) (b);
-    if (abs (a) == abs (except) && abs (b) != abs (except))
-      return false;
-    if (abs (a) != abs (except) && abs (b) == abs (except))
-      return true;
-    if (abs (a) == abs (lhs) && abs (b) != abs (lhs))
-      return false;
-    if (abs (a) != abs (lhs) && abs (b) == abs (lhs))
-      return true;
-    return sort_literals_by_var_rank (internal) (a) >
-           sort_literals_by_var_rank (internal) (b);
   }
 };
 struct sort_literals_by_var_smaller {
