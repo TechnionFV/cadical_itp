@@ -13,7 +13,7 @@ usage: $scriptname [ <option> ]
 where '<option>' is one of the following:
 
 -h        print this command line option summary
--j[ ]<n>  number '<n>' of parallel threads (passed to 'Makefile')
+-j[ ]<n>  number '<n>' of parallel threads (passed to 'makefile')
 -s[ ]<n>  number '<n>' of starting configuration
 EOF
 exit 0

@@ -1272,8 +1272,11 @@ void Closure::learn_congruence_unit_when_lhs_set (Gate *g, int src,
     }
     LOG (lrat_chain, "lrat");
     break;
+  case Gate_Type::XOr_Gate:
+  case Gate_Type::ITE_Gate:
   default:
     assert (false);
+    break;
   }
 }
 
@@ -2569,7 +2572,7 @@ void Closure::update_and_gate (Gate *g, GatesTable::iterator it, int src,
   bool garbage = true;
   if (g->arity () == 1 && internal->val (g->lhs) &&
       internal->val (g->lhs) == internal->val (g->rhs[0])) {
-    mark_garbage(g);
+    mark_garbage (g);
     return;
   }
   if (falsifies || clashing) {
@@ -5444,18 +5447,17 @@ bool Closure::rewrite_ite_gate_to_and (
   return false;
 }
 void Closure::produce_ite_merge_rhs_cond (Gate *g, int else_lit, int lhs) {
-  assert (unsimplified.empty());
+  assert (unsimplified.empty ());
   if (internal->lrat) {
-    produce_rewritten_clause_lrat_and_clean (g->pos_lhs_ids, g->lhs,
-                                             false);
+    produce_rewritten_clause_lrat_and_clean (g->pos_lhs_ids, g->lhs, false);
     assert (g->pos_lhs_ids.size () == 2);
-    assert (lrat_chain.empty());
+    assert (lrat_chain.empty ());
     lrat_chain.push_back (g->pos_lhs_ids[0].clause->id);
     lrat_chain.push_back (g->pos_lhs_ids[1].clause->id);
   } else if (internal->proof) {
-    unsimplified.push_back(-else_lit);
-    unsimplified.push_back(lhs);
-    simplify_and_add_to_proof_chain(unsimplified);
+    unsimplified.push_back (-else_lit);
+    unsimplified.push_back (lhs);
+    simplify_and_add_to_proof_chain (unsimplified);
     unsimplified.clear ();
   }
 }
@@ -5821,10 +5823,10 @@ void Closure::rewrite_ite_gate (Gate *g, int dst, int src) {
       // cond ^ else_lit
       if (g->lhs == cond) { // not in Kissat
         // TODO: can we trigger g->lhs == -cond?
-        produce_ite_merge_rhs_cond(g, else_lit, lhs);
+        produce_ite_merge_rhs_cond (g, else_lit, lhs);
         learn_congruence_unit (-else_lit);
         if (!chain.empty ()) {
-          delete_proof_chain();
+          delete_proof_chain ();
         }
         garbage = true;
       } else {
