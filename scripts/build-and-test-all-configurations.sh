@@ -221,4 +221,4 @@ done
 
 test $executed_last = no && fatal "last configuration not executed"
 
-echo "successfully compiled and tested ${GOOD}${ok}${NORMAL} configurations"
+echo "successfully built and tested ${GOOD}${ok}${NORMAL} configurations"
