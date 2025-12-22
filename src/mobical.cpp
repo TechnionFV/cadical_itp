@@ -802,8 +802,9 @@ public:
 
     if ((decision_loc % observed_variables.size ()) == 0) {
       if (!(observed_variables.size () % 11)) {
-        MLOG ("cb_decide forces backtracking to level 1" << std::endl);
-        s->force_backtrack (observed_variables.size () % 5);
+        int target = std::min (observed_variables.size () % 5, observed_trail.size () - 2);
+        MLOG ("cb_decide forces backtracking to level " << target << std::endl);
+        s->force_backtrack (target);
       }
       size_t n = decision_loc / observed_variables.size ();
       auto is_unassigned = [satisfied_literals](int lit) {
