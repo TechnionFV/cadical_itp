@@ -1,15 +1,31 @@
-#!/bin/bash
+#!/bin/sh
+
+scriptname=`basename $0`
 
 . `dirname $0`/colors.sh || exit 1
 
-startConfiguration=0
-
 ############################################################################
 
+usage() {
+cat <<EOF
+usage: $scriptname [ <option> ]
+
+where '<option>' is one of the following:
+
+-h        print this command line option summary
+-j[ ]<n>  number '<n>' of parallel threads (passed to 'Makefile')
+-s[ ]<n>  number '<n>' of starting configuration
+EOF
+exit 0
+}
+
 die () {
-  echo "build-and-test-all-configurations.sh [-j N] [-s StartConfiguration]: ${BAD}error${NORMAL}: $*" 1>&2
-  echo "You can pass the configuration number to start directly from one configuration"
-  echo "The argument to -j is not optional. It only refers to makefile arguments, the compilation is not run in parallel."
+  echo "$scriptname: ${BAD}${BOLD}error${NORMAL}: $*" 1>&2
+  exit 1
+}
+
+fatal () {
+  echo "$scriptname: ${BAD}${BOLD}fatal internal error${NORMAL}: $*" 1>&2
   exit 1
 }
 
@@ -42,113 +58,162 @@ fi
 
 ############################################################################
 
-ok=0
+running="unknown"
 
 run () {
   if [ "$*" = "" ]
   then
     configureoptions=""
-    description="<empty>"
   else
     configureoptions=" $*"
-    description="$*"
   fi
-  echo "$environment$configure$configureoptions && make$makeoptions$makeflags test"
-  $configure$configureoptions $* >/dev/null 2>&1 && \
+  echo "[$running] $environment$configure$configureoptions && make$makeoptions$makeflags test clean"
+  $configure$configureoptions $* >/dev/null 2>&1
+  test $? = 0 || die "configuration $running failed."
+  make$makeoptions$makeflags >/dev/null 2>&1
+  test $? = 0 || die "building configuration $running failed."
   make$makeoptions$makeflags test >/dev/null 2>&1
-  test $? = 0 || die "Configuration \`$description' failed."
+  test $? = 0 || die "testing configuration $running failed."
   make$makeoptions$makeflags clean >/dev/null 2>&1
-  test $? = 0 || die "Cleaning up for \`$description' failed."
+  test $? = 0 || die "cleaning configuration $running failed."
   ok=`expr $ok + 1`
 }
 
 ############################################################################
 
-END=29
+ok=0
+begin=0
+end=32
 
-while getopts "j:s:h" arg; do
-  case $arg in
-    h)
-      die ""
-      ;;
-    j)
-      strength=$OPTARG
-      makeflags=" -j${OPTARG}"
-      ;;
-    s)
-      startConfiguration=$OPTARG
+while [ $# -gt 0 ]
+do
+  case "$1" in
+    -h) usage;;
+    -j[1-9]|-j[1-9][0-9]*)
+       makeflags=" -j`echo @$1 |sed -e 's,@-j,,'`"
+       ;;
+    -s[0-9]|-s[1-9][0-9])
+       begin=`echo "@$1" |sed -e 's,@-s,,'`
+       test $begin -gt $end && \
+         die "invalid start configuration '$1' (above end '$end')"
+       ;;
+    -j) 
+        shift
+	test $# = 0 && die "argument to '-j' missing'"
+	case "$1" in
+	  [0-9]|[1-9][0-9]) makeflags="$1" ;;
+	  *) die "invalid argument in '-j $1'" ;;
+	esac
+	;;
+    -s) 
+        shift
+	test $# = 0 && die "argument to '-s' missing'"
+	case "$1" in
+	  [0-9]|[1-9][0-9]*) begin="$1" ;;
+	  *) die "invalid argument in '-s $1'" ;;
+	esac
+	 test $begin -gt $end && \
+	   die "invalid start configuration '-s $1' (above end '$end')"
+	;;
+    *)
+      die "invalid option '$1' (try '-h')"
       ;;
   esac
+  shift
 done
 
 run_configuration () {
-    case $1 in		# default configuration (depends on 'MAKEFLAGS'!)
-	0) run -p;;		# then check default pedantic first
+  running="$1"
+  case $1 in		# default configuration (depends on 'MAKEFLAGS'!)
+    0) run -p;;	# then check default pedantic first
 
-        1) run -q;;		# library users might want to disable messages
-        2) run -q -p;;	# also check '--quiet' pedantically
+    1) run -q;;	# library users might want to disable messages
+    2) run -q -p;;	# also check '--quiet' pedantically
 
-        # now start with the five single options
+    # now start with the five single options
 
-        3) run -a;;		# actually enables all the four next options below
-        4) run -c;;
-        5) run -g;;
-        6) run -l;;
+    3) run -a;;	# actually enables all the four next options below
+    4) run -c;;
+    5) run -g;;
+    6) run -l;;
 
-        # all five single options pedantically
+    # all five single options pedantically
 
-        7) run -a -p;;
-        8) run -c -p;;
-        9) run -g -p;;
-        10) run -l -p;;
+    7) run -a -p;;
+    8) run -c -p;;
+    9) run -g -p;;
+    10) run -l -p;;
 
-        # all legal pairs of single options
-        # ('-a' can not be combined with any of the other options)
-        # ('-g' can not be combined '-c')
+    # all legal pairs of single options
+    # ('-a' can not be combined with any of the other options)
+    # ('-g' can not be combined '-c')
 
-        11) run -c -l;;
-        12) run -c -q;;
-        13) run -g -l;;
-        14) run -g -q;;
+    11) run -c -l;;
+    12) run -c -q;;
+    13) run -g -l;;
+    14) run -g -q;;
 
-        # the same pairs but now with pedantic compilation
+    # the same pairs but now with pedantic compilation
 
-        15) run -c -l -p;;
-        16) run -c -q -p;;
-        17) run -g -l -p;;
-        18) run -g -q -p;;
+    15) run -c -l -p;;
+    16) run -c -q -p;;
+    17) run -g -l -p;;
+    18) run -g -q -p;;
 
-        # finally check that these also work to some extend
+    # finally check that these also work to some extend
 
-        19) run --no-unlocked -q;;
-        20) run --no-unlocked -a -p;;
+    19) run --no-unlocked -q;;
+    20) run --no-unlocked -a -p;;
 
-        21) run --no-contracts -q;;
-        22) run --no-contracts -a -p;;
+    21) run --no-contracts -q;;
+    22) run --no-contracts -a -p;;
 
-        23) run --no-tracing -q;;
-        24) run --no-tracing -a -p;;
+    23) run --no-tracing -q;;
+    24) run --no-tracing -a -p;;
 
-        25) run -m32 -q;;
-        26) run -m32 -a -p;;
+    25) run -m32 -q;;
+    26) run -m32 -a -p;;
 
-        # Shared library builds
+    # Shared library builds
 
-        27) run -shared;;
-        28) run -shared -p;;
-        $END) run -shared -p -m32;;
-    esac
+    27) run -shared;;
+    28) run -shared -p;;
+    29) run -shared -p -m32;;
+
+    # sanitizer configurations
+    30) run -a -fsanitize=address -fsanitize=undefined;;
+    31) run -a -p -fsanitize=address -fsanitize=undefined;;
+    32) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wcast-align -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing=3 -fno-common -fstrict-aliasing -Wno-format-nonliteral
+      executed_last=yes;; # keep this as part of last configuration
+
+    *) fatal "iterating over invalid configuration '$1'";;
+  esac
 }
 
+executed_last=no
+executed_begin=no
+executed_end=no
 
-for i in $(seq 0 $(($END - 1))); do
-    v=$(($i + $startConfiguration))
-    if [ $v -ge $END ]; then
-       v=$(( $v - $END ));
-    fi
-    echo "running configuration $v"
-    run_configuration $v
+i=$begin
+while [ $i -le $end ]
+do
+  run_configuration $i
+  if [ $i = $begin ]
+  then
+    executed_begin=yes
+  fi
+  if [ $i = $end ]
+  then
+    executed_end=yes
+  fi
+  i=`expr $i + 1`
+  if [ $i -gt $end ]
+  then
+    i=0
+  fi
+  test $executed_begin = yes -a $executed_end = yes && break
 done
 
+test $executed_last = no && fatal "last configuration not executed"
 
 echo "successfully compiled and tested ${GOOD}${ok}${NORMAL} configurations"
