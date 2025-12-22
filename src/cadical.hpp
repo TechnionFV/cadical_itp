@@ -13,7 +13,7 @@
 
 #define CADICAL_MAJOR 2 // Major semantic version.
 #define CADICAL_MINOR 2 // Minor semantic version.
-#define CADICAL_PATCH 0 // Semantic patch version.
+#define CADICAL_PATCH 1 // Semantic patch version.
 
 namespace CaDiCaL {
 
