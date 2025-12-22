@@ -2,10 +2,10 @@
 /* Copyright (C) 2018-2021 Armin Biere, Johannes Kepler University Linz   */
 /* Copyright (C) 2020-2021 Mathias Fleury, Johannes Kepler University Linz*/
 /* Copyright (c) 2020-2021 Nils Froleyks, Johannes Kepler University Linz */
-/* Copyright (C) 2022-2024 Katalin Fazekas, Technical University of Vienna*/
-/* Copyright (C) 2021-2024 Armin Biere, University of Freiburg            */
-/* Copyright (C) 2021-2023 Mathias Fleury, University of Freiburg         */
-/* Copyright (C) 2023-2024 Florian Pollitt, University of Freiburg */
+/* Copyright (C) 2022-2025 Katalin Fazekas, Technical University of Vienna*/
+/* Copyright (C) 2021-2025 Armin Biere, University of Freiburg            */
+/* Copyright (C) 2021-2025 Mathias Fleury, University of Freiburg         */
+/* Copyright (C) 2023-2025 Florian Pollitt, University of Freiburg */
 /* Copyright (C) 2024-2024 Tobias Faller, University of Freiburg   */
 /*------------------------------------------------------------------------*/
 
@@ -1012,6 +1012,7 @@ class Mobical : public Handler {
   friend struct FlippableCall;
   friend struct MeltCall;
   friend class MockPropagator;
+  friend class ResetCall;
   friend struct ConnectCall;
   friend struct DisconnectCall;
 
@@ -1585,6 +1586,10 @@ struct ResetCall : public Call {
     extendmap.map.clear ();
     delete s;
     s = 0;
+    if (mobical.mock_pointer) {
+      delete mobical.mock_pointer;
+      mobical.mock_pointer = 0;
+    }
   }
   void print (ostream &o) { o << "reset" << endl; }
   Call *copy () { return new ResetCall (); }
