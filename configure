@@ -615,7 +615,8 @@ fi
 
 # Instantiate '../makefile.in' template to produce 'makefile' in 'build'.
 
-msg "compiling with ${HILITE}'$CXX $CXXFLAGS'${NORMAL}"
+msg "compiling C++ with ${HILITE}'$CXX $CXXFLAGS'${NORMAL}"
+msg "compiling C with ${HILITE}'$CC $CFLAGS'${NORMAL}"
 
 rm -f makefile
 sed \
