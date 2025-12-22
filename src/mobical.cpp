@@ -801,7 +801,7 @@ public:
         current_observed_satisfied_set (lit_sum, lowest_lit, highest_lit);
 
     if ((decision_loc % observed_variables.size ()) == 0) {
-      if (!(observed_variables.size () % 11)) {
+      if (!(observed_variables.size () % 11) && observed_trail.size () > 1) {
         int target = std::min (observed_variables.size () % 5, observed_trail.size () - 2);
         MLOG ("cb_decide forces backtracking to level " << target << std::endl);
         s->force_backtrack (target);
