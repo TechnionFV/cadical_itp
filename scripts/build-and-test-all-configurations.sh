@@ -122,9 +122,11 @@ do
   shift
 done
 
+############################################################################
+
 run_configuration () {
   running="$1"
-  case $1 in		# default configuration (depends on 'MAKEFLAGS'!)
+  case $1 in	# default configuration (depends on 'MAKEFLAGS'!)
     0) run -p;;	# then check default pedantic first
 
     1) run -q;;	# library users might want to disable messages
