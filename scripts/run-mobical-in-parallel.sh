@@ -16,6 +16,8 @@ die () {
   echo "$name: $error: $*" 1>&2
   exit 1
 }
+mobical=`dirname $0`/../build/mobical
+test -f $mobical || die "could not find '$mobical'"
 test $# = 0 && usage
 case x"$1" in
   -h) usage;;
@@ -35,10 +37,11 @@ then
 else
   echo " with argument '$*'"
 fi
+echo "using '$mobical'"
 i=0
 while [ $i -lt $n ]
 do
-  mobical -q $* &
+  $mobical -q $* &
   i=`expr $i + 1`
 done
 wait
