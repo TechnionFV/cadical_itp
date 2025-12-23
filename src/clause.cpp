@@ -495,6 +495,7 @@ void Internal::add_new_original_clause (int64_t id) {
         assert (val (clause[0]));
         v.level = 0;
         v.reason = 0;
+        did_external_prop = true;
         const unsigned uidx = vlit (clause[0]);
         if (lrat || frat)
           unit_clauses (uidx) = new_id;
