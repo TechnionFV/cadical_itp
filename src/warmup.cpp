@@ -356,7 +356,7 @@ int Internal::warmup () {
          num_assigned < (size_t) max_var) {
     assert (num_assigned < (size_t) max_var);
     res = warmup_decide ();
-    if (propagate ()) {
+    if (!propagate ()) {
       res = 20;
       marked_failed = false;
       break;
