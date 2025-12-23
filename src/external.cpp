@@ -175,8 +175,9 @@ void External::add (int elit) {
   if (elit)
     REQUIRE (is_valid_input ((int) elit),
              "extension variable '%d' defined by the solver internally "
-             "(all user variables have to be declared explicitly)",
-             (int) (elit));
+             "(all user variables have to be declared explicitly "
+	     "if 'factor' is enabled)", // TODO only reason?
+             (int) abs(elit));
   reset_extended ();
 
   bool forgettable = false;
