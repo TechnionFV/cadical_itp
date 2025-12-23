@@ -1,3 +1,48 @@
+Version 3.0.0
+-------------
+
+Breaking Changes:
+
+- Renamed `get_entrailed_literals` function to `implied` after it became
+  deprecated in the 2.2.0 release.  Due to removing the former function from
+  the interface it is a breaking change, but the function has the same
+  (slightly extended in release 2.2.0) semantics as before and users can just
+  replace `get_entrailed_literals` by `implied`.
+
+- Renamed the `reserve` function to `resize` after it became deprecated in the
+  2.2.0 release due to its misleading name (cf. semantics of `reserve` and
+  `resize` for `std::vector`).  Users can replace in their code simply replace
+  `reserve` by `resize` though as semantics of the function did not
+  change at all.
+
+- Furthermore, and probably the most severe change, as announced in
+  the 2.2.0 release, our incremental version of bounded value addition (aka
+  BVA or `factor`) requires changing how variables are treated, particular
+  in the context of incremental SAT solving.
+
+  In principle, variables now have to be declared explicitly (with one of
+  the `declare_more_variables` or `declare_one_more_variable` functions)
+  before clauses can be added containing them, or a value is asked for them
+  etc.  This became necessary for proof checking in incremental SAT solving
+  when using techniques, such as BVA (`factor`), that rely on the
+  introduction of extension variables.  These variables necessarily have to
+  occur in proofs and have to be distinguished from actual user variables.
+  Our solution is to force the user to ask the solver for unused variable
+  ranges, which avoids overlap with extension variables.
+
+  Only these declared variables can then be used freely as before.  However,
+  at this moment, for one-shot-solving there is no usage change, nor for the
+  first solving/simplification call to the SAT solver.  The same applies if
+  all techniques relying on extension variables are disabled (currently when
+  `factor` is disabled).  But for incremental usage, while keeping `factor`
+  enabled (the default since release 3.0.0), the user has to follow this new
+  API contract.  Disabling `factor` is an alternative, but that can have
+  the consequence to reduce solving efficiency, particularly on hard
+  combinatorial benchmarks, such as pigeon hole formulas.  We are also
+  already working on further uses of extension variables, for which this new
+  API contract will also apply (and then probably already during adding
+  clauses or constraints).
+
 Version 2.2.1
 -------------
 
