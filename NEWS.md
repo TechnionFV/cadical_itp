@@ -15,7 +15,7 @@ Version 2.2.1
     * When activating factor only (off by default), you need to use
       `declare_more_variables` or `declare_one_more_variable` in order to use
       new variables (otherwise you get a fatal error message).
-      
+
     * If you want to prepare your code to follow this new semantics without
       activating factor, you can already set `factorcheck` to 2.
 
@@ -27,28 +27,28 @@ Version 2.2.1
 IPASIR-UP Related Changes:
 
 - Many of the requirements of each IPASIR-UP-related solver function have been
-  made explicit, and additional input checks have been added for the arguments 
-  of the related callback functions. Consequently, the solver will terminate 
+  made explicit, and additional input checks have been added for the arguments
+  of the related callback functions. Consequently, the solver will terminate
   immediately if incorrect input is provided, in contrast to the previous
   approach where the solver attempted to recover silently from such errors.
 
 - Some examples of implementing external propagators have been added as a
-  file `test/api/example_propagators.cpp`. The code comments demonstrate the 
-  newly introduced error messages that can be triggered by misusing the 
+  file `test/api/example_propagators.cpp`. The code comments demonstrate the
+  newly introduced error messages that can be triggered by misusing the
   IPASIR-UP interface.
 
 - Users can force backtracking (see the `force_backtrack` function) during the
   `cb_check_found_model` function. Furthermore, the type of the `new_level`
-  argument has been changed from `size_t` to `int`, and calling it with an 
-  incorrect value or in the wrong place triggers an explicit runtime error 
+  argument has been changed from `size_t` to `int`, and calling it with an
+  incorrect value or in the wrong place triggers an explicit runtime error
   message.
 
-- The functions `remove_observed_var` and `reset_observed_vars` are now 
+- The functions `remove_observed_var` and `reset_observed_vars` are now
   permitted during solving, but they potentially trigger additional
   backtracking steps, so in certain cases it remains unsupported. However,
   calling them in improper states triggers an explicit runtime error message.
 
-- Some of the explanations and comments around the IPASIR-UP related functions 
+- Some of the explanations and comments around the IPASIR-UP related functions
   have been updated and fixed.
 
 Version 2.2.0
@@ -81,7 +81,7 @@ User Facing Changes:
   that it is now also allowed in the 'SATISFIED' state. The next
   major release will remove `get_entrailed_literals`.
 
-- The `reserve` function became **deprecated** and is going to be replaced 
+- The `reserve` function became **deprecated** and is going to be replaced
   by the new `resize`  function due to its misleading name (compared to
   `std::vector`).  Users can in their code simply replace `reserve` by
   `resize`.  The next major release will remove `reserve`.
@@ -152,7 +152,7 @@ Version 2.1.3
     returned `0` (UNKNOWN), this function returns (the subset of) those
     literals that were assigned based on the assumptions and propagation.
     Those assigned literals that are tainted on the reconstruction stack
-    (due to some preprocessing) are not returned, thus it is safe to 
+    (due to some preprocessing) are not returned, thus it is safe to
     combine it with the formula simplifications.
 
 - LIDRUP proofs now include information about queries that returned with
@@ -196,22 +196,22 @@ Version 2.1.0
 
 - Major IPASIR-UP increment. Please be aware that some of these
   changes affect the syntax of the API, and thus updating to this
-  version of CaDiCaL requires to modify the consuming code to 
+  version of CaDiCaL requires to modify the consuming code to
   accommodate to the new syntax:
 
   - Notification of assignments is batched into arrays and no more fixed
     flags are passed during notification (`breaking change`)
-  
+
   - Allow clauses learned from the propagator to be deleted (see
     `is_forgettable` parameter and `are_reasons_forgettable` Boolean flag)
     (`breaking change`)
-  
-  - Added support to generate incremental proofs (LIDRUP) while 
+
+  - Added support to generate incremental proofs (LIDRUP) while
     using IPASIR-UP
 
   - Users can force to backtrack during `cb_decide` (see function
     `force_backtrack`)
-  
+
   - Removed unnecessary notifications of backtrack during
     inprocessing (supposed to solve issue #92).
 
@@ -292,7 +292,7 @@ Version 1.9.0
 - Making progress to formal 1.9 release with minor fixes for
   different platforms and compilers.
 
-- Refine IPASIR-UP based on feedback from users. 
+- Refine IPASIR-UP based on feedback from users.
 
 Version 1.8.0
 -------------
@@ -341,14 +341,14 @@ Version 1.7.3
   solving (e.g., by a user propagation) or simply by ILB.  Reimplication
   improves quality of learned clauses and potentially shortens search in
   such cases.
- 
+
 - A new proof tracer interface allows to add a proof `Tracer` through the
   API (via `connect_proof_tracer`). This feature allows to use custom
   proof tracers to process clausal proofs on-the-fly while solving.  Both
   proofs steps with proof antecedents (needed for instance for
   interpolation) as well as without (working directly on DRAT level) are
   supported.
- 
+
 - Reworked options for proof tracing to be less confusing.  Support for
   `DRAT`, `LRAT`, `FRAT` and `VeriPB` (with or without antecedents).
 
