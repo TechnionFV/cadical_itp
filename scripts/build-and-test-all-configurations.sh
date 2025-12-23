@@ -104,7 +104,7 @@ run () {
 ############################################################################
 
 begin=0
-end=34
+end=35
 
 m32=no
 undefined=no
@@ -154,69 +154,71 @@ map_and_run () {
 
   running="$1" # such that 'run' knows the configuration number
 
-  case $1 in	# default configuration (depends on 'MAKEFLAGS'!)
-    0) run -p;;	# then check default pedantic first
+  case $1 in
 
-    1) run -q;;	# library users might want to disable messages
-    2) run -q -p;;	# also check '--quiet' pedantically
+    0) run ;;	# run default configuration first
+    1) run -p;;	# then check default pedantic next
+
+    2) run -q;;	# library users might want to disable messages
+    3) run -q -p;;	# also check '--quiet' pedantically
 
     # now start with the five single options
 
-    3) run -a;;	# actually enables all the four next options below
-    4) run -c;;
-    5) run -g;;
-    6) run -l;;
+    4) run -a;;	# actually enables all the four next options below
+    5) run -c;;
+    6) run -g;;
+    7) run -l;;
 
     # all five single options pedantically
 
-    7) run -a -p;;
-    8) run -c -p;;
-    9) run -g -p;;
-    10) run -l -p;;
+    8) run -a -p;;
+    9) run -c -p;;
+    10) run -g -p;;
+    11) run -l -p;;
 
     # all legal pairs of single options
     # ('-a' can not be combined with any of the other options)
     # ('-g' can not be combined '-c')
 
-    11) run -c -l;;
-    12) run -c -q;;
-    13) run -g -l;;
-    14) run -g -q;;
+    12) run -c -l;;
+    13) run -c -q;;
+    14) run -g -l;;
+    15) run -g -q;;
 
     # the same pairs but now with pedantic compilation
 
-    15) run -c -l -p;;
-    16) run -c -q -p;;
-    17) run -g -l -p;;
-    18) run -g -q -p;;
+    16) run -c -l -p;;
+    17) run -c -q -p;;
+    18) run -g -l -p;;
+    19) run -g -q -p;;
 
     # finally check that these also work to some extend
 
-    19) run --no-unlocked -q;;
-    20) run --no-unlocked -a -p;;
+    20) run --no-unlocked -q;;
+    21) run --no-unlocked -a -p;;
 
-    21) run --no-contracts -q;;
-    22) run --no-contracts -a -p;;
+    22) run --no-contracts -q;;
+    23) run --no-contracts -a -p;;
 
-    23) run --no-tracing -q;;
-    24) run --no-tracing -a -p;;
+    24) run --no-tracing -q;;
+    25) run --no-tracing -a -p;;
 
-    25) run -m32 -q;;
-    26) run -m32 -a -p;;
+    26) run -m32 -q;;
+    27) run -m32 -a -p;;
 
     # Shared library builds
 
-    27) run -shared;;
-    28) run -shared -p;;
-    29) run -shared -p -m32;;
+    28) run -shared;;
+    29) run -shared -p;;
+    30) run -shared -p -m32;;
 
     # Sanitizer configurations
 
-    30) run -a -fsanitize=address;;
-    31) run -a -p -fsanitize=address;;
-    32) run -a -fsanitize=undefined;;
-    33) run -a -p -fsanitize=undefined;;
-    34) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing=3 -fno-common -fstrict-aliasing -Wno-format-nonliteral
+    31) run -a -fsanitize=address;;
+    32) run -a -p -fsanitize=address;;
+    33) run -a -fsanitize=undefined;;
+    34) run -a -p -fsanitize=undefined;;
+    35) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing=3 -fno-common -fstrict-aliasing -Wno-format-nonliteral
 
       executed_last_configuration=yes # Keep this as part of last configuration!
 
