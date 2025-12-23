@@ -218,7 +218,7 @@ map_and_run () {
     32) run -a -p -fsanitize=address;;
     33) run -a -fsanitize=undefined;;
     34) run -a -p -fsanitize=undefined;;
-    35) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing=3 -fno-common -fstrict-aliasing -Wno-format-nonliteral
+    35) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing -fno-common -fstrict-aliasing -Wno-format-nonliteral
 
       executed_last_configuration=yes # Keep this as part of last configuration!
 
