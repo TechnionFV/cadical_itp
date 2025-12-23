@@ -788,7 +788,8 @@ public:
         new_observed_variables.size ()) {
       int new_var = add_new_observed_var ();
       if (new_var) {
-        MLOG ("cb_decide returns new variable " << -1 * new_var << std::endl);
+        MLOG ("cb_decide returns new variable " << -1 * new_var
+                                                << std::endl);
         return -1 * new_var;
       }
     }
@@ -801,16 +802,18 @@ public:
         current_observed_satisfied_set (lit_sum, lowest_lit, highest_lit);
 
     if ((decision_loc % observed_variables.size ()) == 0) {
-      if (!(observed_variables.size () % 11) && observed_trail.size () > 1) {
-        int target = std::min (observed_variables.size () % 5, observed_trail.size () - 2);
-        MLOG ("cb_decide forces backtracking to level " << target << std::endl);
+      if (!(observed_variables.size () % 11) &&
+          observed_trail.size () > 1) {
+        int target = std::min (observed_variables.size () % 5,
+                               observed_trail.size () - 2);
+        MLOG ("cb_decide forces backtracking to level " << target
+                                                        << std::endl);
         s->force_backtrack (target);
       }
       size_t n = decision_loc / observed_variables.size ();
-      auto is_unassigned = [satisfied_literals](int lit) {
-        return
-          satisfied_literals.find (lit) == satisfied_literals.end () &&
-          satisfied_literals.find (-lit) == satisfied_literals.end ();
+      auto is_unassigned = [satisfied_literals] (int lit) {
+        return satisfied_literals.find (lit) == satisfied_literals.end () &&
+               satisfied_literals.find (-lit) == satisfied_literals.end ();
       };
       if (n < observed_variables.size ()) {
         // find the n-th unassigned variable from the beginning of observe
@@ -822,8 +825,7 @@ public:
           }
           ++it;
         }
-        if (it != observed_variables.end () &&
-          is_unassigned (*it)) {
+        if (it != observed_variables.end () && is_unassigned (*it)) {
           int lit = *it;
           MLOG ("cb_decide returns unassigned" << -1 * lit << std::endl);
           return -1 * lit;
@@ -2184,8 +2186,8 @@ public:
         // They are (ideally) are executed already
         if (c->type == Call::LEMMA)
           continue;
-        // if (c->type == Call::CONTINUE)
-        //   continue;
+          // if (c->type == Call::CONTINUE)
+          //   continue;
 #ifdef MOBICAL_MEMORY
         if (c->type == Call::MAXALLOC) {
           memory_bad_alloc = c->val;

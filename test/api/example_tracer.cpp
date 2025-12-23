@@ -67,7 +67,7 @@ int main () {
   solver->connect_proof_tracer (st1, 1);
   solver->connect_proof_tracer (st2, 0);
 
-  const int var2 = solver->declare_more_variables(2);
+  const int var2 = solver->declare_more_variables (2);
   const int var1 = var2 - 1;
   solver->add (var1);
   solver->add (var2);

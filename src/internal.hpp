@@ -268,7 +268,8 @@ struct Internal {
   vector<int> minimized;     // removable or poison in 'minimize'
   vector<int> shrinkable;    // removable or poison in 'shrink'
   Reap reap;                 // radix heap for shrink
-  bool factorcheckdone=0;    // boolean indicated that we have done the resize 1
+  bool factorcheckdone =
+      0; // boolean indicated that we have done the resize 1
 
   vector<int> sweep_schedule; // remember sweep varibles to reschedule
   bool sweep_incomplete;      // sweep

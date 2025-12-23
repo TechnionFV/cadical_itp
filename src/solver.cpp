@@ -336,10 +336,11 @@ void Solver::trace_api_call (const char *s0, const char *s1, int i2) const {
 // without requiring to change any application code.
 //
 // We initially had static but Mate Soos reported a helgrind error
-// (https://github.com/arminbiere/cadical/issues/155) so we fixed it to static
-// atomic.
+// (https://github.com/arminbiere/cadical/issues/155) so we fixed it to
+// static atomic.
 //
-static atomic<bool> tracing_api_calls_through_environment_variable_method {false};
+static atomic<bool> tracing_api_calls_through_environment_variable_method{
+    false};
 
 /*------------------------------------------------------------------------*/
 #else // NTRACING
@@ -360,7 +361,7 @@ static atomic<bool> tracing_api_calls_through_environment_variable_method {false
 // garbage. See also the comment on
 // `tracing_api_calls_through_environment_variable_method` above.
 //
-static atomic<bool> tracing_nb_lidrup_env_var_method {false};
+static atomic<bool> tracing_nb_lidrup_env_var_method{false};
 
 Solver::Solver () {
 
@@ -405,7 +406,7 @@ Solver::Solver () {
   if (lidrup_path) {
     if (tracing_nb_lidrup_env_var_method)
       FATAL ("can not trace LIDRUP of two solver instances "
-        "using environment variable 'CADICAL_LIDRUP_TRACE'");
+             "using environment variable 'CADICAL_LIDRUP_TRACE'");
     // Here we use the solver interface to setup non-binary IDRUP tracing to
     // the defined file. Options set by the user can and will overwrite
     // these settings if neeed be.
@@ -626,12 +627,14 @@ bool Solver::configure (const char *name) {
 void Solver::add (int lit) {
   TRACE ("add", lit);
   REQUIRE_VALID_STATE ();
-  if (lit && ((internal->opts.factor && internal->opts.factorcheck == 1) ||  internal->opts.factorcheck == 2))
-    REQUIRE (abs(lit) <= external->max_var,
-           "undeclared variable %d usage. "
-           "Use `declare_one_more_variable ()` to get the next variable (s) "
-           "or `declare_more_variables (n)` to get the next n variables.",
-           (int) (lit));
+  if (lit && ((internal->opts.factor && internal->opts.factorcheck == 1) ||
+              internal->opts.factorcheck == 2))
+    REQUIRE (
+        abs (lit) <= external->max_var,
+        "undeclared variable %d usage. "
+        "Use `declare_one_more_variable ()` to get the next variable (s) "
+        "or `declare_more_variables (n)` to get the next n variables.",
+        (int) (lit));
   if (lit)
     REQUIRE_VALID_LIT (lit);
   transition_to_steady_state ();
@@ -1075,7 +1078,8 @@ void Solver::connect_external_propagator (ExternalPropagator *propagator) {
   LOG_API_CALL_BEGIN ("connect_external_propagator");
   REQUIRE_VALID_STATE ();
   REQUIRE (propagator, "can not connect zero propagator");
-  REQUIRE (!external->propagator, "can not connect more than one propagator");
+  REQUIRE (!external->propagator,
+           "can not connect more than one propagator");
 
   if (external->propagator)
     disconnect_external_propagator ();
@@ -1090,7 +1094,8 @@ void Solver::connect_external_propagator (ExternalPropagator *propagator) {
 void Solver::disconnect_external_propagator () {
   LOG_API_CALL_BEGIN ("disconnect_external_propagator");
   REQUIRE_VALID_STATE ();
-  REQUIRE (external->propagator, "can not disconnect propagator without a connected propagator");
+  REQUIRE (external->propagator,
+           "can not disconnect propagator without a connected propagator");
   external->reset_observed_vars ();
 
   external->propagator = 0;
@@ -1105,7 +1110,8 @@ void Solver::add_observed_var (int idx) {
   TRACE ("observe", idx);
   REQUIRE_VALID_OR_SOLVING_STATE ();
   REQUIRE_VALID_LIT (idx);
-  REQUIRE (external->propagator, "can not observe variables without a connected propagator");
+  REQUIRE (external->propagator,
+           "can not observe variables without a connected propagator");
   external->add_observed_var (idx);
   LOG_API_CALL_END ("observe", idx);
 }
@@ -1114,7 +1120,8 @@ void Solver::remove_observed_var (int idx) {
   TRACE ("unobserve", idx);
   REQUIRE_VALID_OR_SOLVING_STATE ();
   REQUIRE_VALID_LIT (idx);
-  REQUIRE (external->propagator, "can not unobserve variables without a connected propagator");
+  REQUIRE (external->propagator,
+           "can not unobserve variables without a connected propagator");
   external->remove_observed_var (idx);
   LOG_API_CALL_END ("unobserve", idx);
 }
@@ -1122,7 +1129,9 @@ void Solver::remove_observed_var (int idx) {
 void Solver::reset_observed_vars () {
   TRACE ("reset_observed_vars");
   REQUIRE_VALID_OR_SOLVING_STATE ();
-  REQUIRE (external->propagator, "can not reset observed variables without a connected propagator");
+  REQUIRE (
+      external->propagator,
+      "can not reset observed variables without a connected propagator");
   external->reset_observed_vars ();
   LOG_API_CALL_END ("reset_observed_vars");
 }
@@ -1558,7 +1567,8 @@ bool Solver::is_decision (int lit) {
 void Solver::force_backtrack (int new_level) {
   TRACE ("force_backtrack", new_level);
   REQUIRE_VALID_OR_SOLVING_STATE ();
-  REQUIRE (external->propagator, "can not force backtrack without a connected propagator");
+  REQUIRE (external->propagator,
+           "can not force backtrack without a connected propagator");
   external->force_backtrack (new_level);
 }
 

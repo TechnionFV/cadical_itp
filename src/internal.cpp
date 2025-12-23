@@ -799,7 +799,7 @@ int Internal::preprocess (bool always) {
     return res;
 
   if (opts.deduplicateallinit && !stats.deduplicatedinitrounds)
-    deduplicate_all_clauses();
+    deduplicate_all_clauses ();
 
   preprocess_quickly (always);
   for (int i = 0; i < lim.preprocessing; i++)

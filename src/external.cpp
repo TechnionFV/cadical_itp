@@ -173,10 +173,11 @@ void External::add (int elit) {
   assert (elit != INT_MIN);
 
   if (elit)
-    REQUIRE (is_valid_input ((int) elit), \
-           "extension variable %d defined by the solver "
-           "(try using `vars ()` or `set (factor, 0)` or call `declare_one_more_variable ()` to get the next variable)", \
-           (int) (elit));
+    REQUIRE (is_valid_input ((int) elit),
+             "extension variable %d defined by the solver "
+             "(try using `vars ()` or `set (factor, 0)` or call "
+             "`declare_one_more_variable ()` to get the next variable)",
+             (int) (elit));
   reset_extended ();
 
   bool forgettable = false;
@@ -354,8 +355,9 @@ void External::add_observed_var (int elit) {
 
   int eidx = abs (elit);
 
-  REQUIRE (eidx > max_var || (!marked (witness, elit) && !marked (witness, -elit)), \
-    "Only clean variables are allowed to be observed.");
+  REQUIRE (eidx > max_var ||
+               (!marked (witness, elit) && !marked (witness, -elit)),
+           "Only clean variables are allowed to be observed.");
   // if (eidx <= max_var &&
   //     (marked (witness, elit) || marked (witness, -elit))) {
   //   LOG ("Error, only clean variables are allowed to become observed.");
@@ -413,7 +415,7 @@ void External::add_observed_var (int elit) {
 
 void External::remove_observed_var (int elit) {
   assert (propagator); // REQ is in Solver::remove_observed_var
-  
+
   int eidx = abs (elit);
 
   if (eidx > max_var) // Ignore call if variable does not exist

@@ -9,7 +9,7 @@
 int main () {
 
   CaDiCaL::Solver *solver = new CaDiCaL::Solver;
-  const int TIE = solver->declare_more_variables(2);
+  const int TIE = solver->declare_more_variables (2);
   const int SHIRT = TIE - 1;
 
   // ------------------------------------------------------------------
