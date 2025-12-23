@@ -68,8 +68,8 @@ skip() {
   while [ $# -gt 0 ]
   do
     case x"$1" in
-      x"-m32") test $m32 = yes && return 0;;
-      x"-fsanitize=undefined") test $undefined = yes && return 0;;
+      x"-m32") test $m32 = no && return 0;;
+      x"-fsanitize=undefined") test $undefined = no && return 0;;
     esac
     shift
   done
