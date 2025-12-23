@@ -5439,7 +5439,7 @@ bool Closure::rewrite_ite_gate_to_and (
 void Closure::produce_ite_merge_rhs_cond (Gate *g, int else_lit, int lhs) {
   assert (unsimplified.empty ());
   if (internal->lrat) {
-    produce_rewritten_clause_lrat_and_clean (g->pos_lhs_ids, g->lhs, false);
+    produce_rewritten_clause_lrat_and_clean (g->pos_lhs_ids, g->lhs, false, true);
     assert (g->pos_lhs_ids.size () == 2);
     assert (lrat_chain.empty ());
     lrat_chain.push_back (g->pos_lhs_ids[0].clause->id);
