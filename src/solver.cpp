@@ -627,14 +627,22 @@ bool Solver::configure (const char *name) {
 void Solver::add (int lit) {
   TRACE ("add", lit);
   REQUIRE_VALID_STATE ();
-  if (lit && ((internal->opts.factor && internal->opts.factorcheck == 1) ||
-              internal->opts.factorcheck == 2))
-    REQUIRE (
-        abs (lit) <= external->max_var,
-        "undeclared variable %d usage. "
-        "Use `declare_one_more_variable ()` to get the next variable (s) "
-        "or `declare_more_variables (n)` to get the next n variables.",
-        (int) (lit));
+  if (lit) {
+    if (internal->opts.factor && internal->opts.factorcheck == 1)
+      REQUIRE (
+          abs (lit) <= external->max_var,
+          "adding literal '%d' with undeclared variable '%d' "
+          "(checking that user variables are declared explicitly failed "
+          "as both 'factor' and 'factorcheck' are enabled)",
+          lit, (int) abs (lit));
+    if (internal->opts.factorcheck == 2)
+      REQUIRE (
+          abs (lit) <= external->max_var,
+          "adding literal '%d' with undeclared variable '%d' "
+          "(checking that user variables are declared explicitly failed "
+          "as 'factorcheck == 2' even if 'factor' is disabled)",
+          lit, (int) abs (lit));
+  }
   if (lit)
     REQUIRE_VALID_LIT (lit);
   transition_to_steady_state ();

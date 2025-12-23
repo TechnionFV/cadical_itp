@@ -174,9 +174,8 @@ void External::add (int elit) {
 
   if (elit)
     REQUIRE (is_valid_input ((int) elit),
-             "extension variable %d defined by the solver "
-             "(try using `vars ()` or `set (factor, 0)` or call "
-             "`declare_one_more_variable ()` to get the next variable)",
+             "extension variable '%d' defined by the solver internally "
+             "(all user variables have to be declared explicitly)",
              (int) (elit));
   reset_extended ();
 
