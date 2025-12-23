@@ -12,21 +12,22 @@ usage: $scriptname [ <option> ]
 
 where '<option>' is one of the following:
 
--h         print this command line option summary
--j[ ]<n>   number '<n>' of parallel threads (passed to 'makefile')
--s[ ]<n>   number '<n>' of starting configuration
--m | -m32  include 32 bit tests
+-h                 print this command line option summary
+-j[ ]<n>           number '<n>' of parallel threads (passed to 'makefile')
+-s[ ]<n>           number '<n>' of starting configuration
+-m | -m32          include 32 bit tests
+-u | --undefined   also run '-fsanitize=undefined'
 EOF
 exit 0
 }
 
 die () {
-  echo "$scriptname: ${BAD}${BOLD}error${NORMAL}: $*" 1>&2
+  cecho "$scriptname: ${BAD}${BOLD}error${NORMAL}: $*" 1>&2
   exit 1
 }
 
 fatal () {
-  echo "$scriptname: ${BAD}${BOLD}fatal internal error${NORMAL}: $*" 1>&2
+  cecho "$scriptname: ${BAD}${BOLD}fatal internal error${NORMAL}: $*" 1>&2
   exit 1
 }
 
@@ -64,11 +65,11 @@ skipped=0
 running="unknown"
 
 skip() {
-  test $m32 = yes && return 1
   while [ $# -gt 0 ]
   do
-    case "$1" in
-      -m32) return 0;;
+    case x"$1" in
+      x"-m32") test $m32 = yes && return 0;;
+      x"-fsanitize=undefined") test $undefined = yes && return 0;;
     esac
     shift
   done
@@ -84,10 +85,10 @@ run () {
   fi
   if skip $*
   then
-    echo "[$running] $environment$configure$configureoptions # skipped"
+    cecho "[$running] $environment$configure$configureoptions # skipped"
     skipped=`expr $skipped + 1`
   else
-    echo "[$running] $environment$configure$configureoptions && make$makeoptions$makeflags && make$makeoptions$makeflags test && make$makeoptions$makeflags clean"
+    cecho "[$running] $environment$configure$configureoptions && make$makeoptions$makeflags && make$makeoptions$makeflags test && make$makeoptions$makeflags clean"
     $configure$configureoptions $* >/dev/null 2>&1
     test $? = 0 || die "configuration $running failed (run '$configure$configureoptions $*' to investigate)"
     make$makeoptions$makeflags >/dev/null 2>&1
@@ -103,9 +104,10 @@ run () {
 ############################################################################
 
 begin=0
-end=32
+end=34
 
 m32=no
+undefined=no
 
 while [ $# -gt 0 ]
 do
@@ -123,6 +125,7 @@ do
 	esac
 	;;
     -m|-m32) m32=yes;;
+    -u|-undefined|--undefined) undefined=yes;;
     -s[0-9]|-s[1-9][0-9])
        begin=`echo "@$1" |sed -e 's,@-s,,'`
        test $begin -gt $end && \
@@ -209,9 +212,11 @@ map_and_run () {
 
     # Sanitizer configurations
 
-    30) run -a -fsanitize=address -fsanitize=undefined;;
-    31) run -a -p -fsanitize=address -fsanitize=undefined;;
-    32) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing=3 -fno-common -fstrict-aliasing -Wno-format-nonliteral
+    30) run -a -fsanitize=address;;
+    31) run -a -p -fsanitize=address;;
+    32) run -a -fsanitize=undefined;;
+    33) run -a -p -fsanitize=undefined;;
+    34) run -a -Wswitch-enum -p -Wextra -Wall -Wextra -Wformat=2 -Wswitch-enum -Wpointer-arith -Winline -Wundef -Wcast-qual -Wwrite-strings -Wunreachable-code -Wstrict-aliasing=3 -fno-common -fstrict-aliasing -Wno-format-nonliteral
 
       executed_last_configuration=yes # Keep this as part of last configuration!
 
@@ -228,13 +233,13 @@ built_and_tested=0;
 configurations=`expr $end + 1`
 executed_last_configuration=no
 
-echo "building and testing ${BOLD}$configurations${NORMAL} configurations 0..$end"
+cecho "building and testing ${BOLD}$configurations${NORMAL} configurations 0..$end"
 
 if [ $begin = 0 ]
 then
-  echo "starting with default configuration $begin"
+  cecho "starting with default configuration $begin"
 else
-  echo "starting with non-default configuration $begin (and then wrapping around)"
+  cecho "starting with non-default configuration $begin (and then wrapping around)"
 fi
 
 i=$begin
@@ -253,7 +258,7 @@ test $executed_last_configuration = no && \
 
 if [ $skipped = 0 ]
 then
-  echo "successfully built and tested ${GOOD}${ok}${NORMAL} configurations (none skipped)"
+  cecho "successfully built and tested ${GOOD}${ok}${NORMAL} configurations (none skipped)"
 else
-  echo "successfully built and tested ${GOOD}${ok}${NORMAL} configurations ($skipped skipped)"
+  cecho "successfully built and tested ${GOOD}${ok}${NORMAL} configurations ($skipped skipped)"
 fi
