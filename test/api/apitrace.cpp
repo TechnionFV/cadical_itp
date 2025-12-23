@@ -48,13 +48,16 @@ int main () {
     unsetenv ("CADICAL_API_TRACE");
   }
 
+  // For now, when 'factor' is disabled and we do not check for wrong API
+  // usage with respect to declared variables, the following two go through.
+
   {
     FILE *file = trace ("file2");
     {
       Solver solver;
       solver.set ("factor", 0);
       solver.trace_api_calls (file);
-      // with factor deactivated we can add literals directly
+      solver.set ("factorcheck", 0);
       solver.add (1);
       solver.add (0);
       solver.add (-1);
@@ -68,6 +71,8 @@ int main () {
     setenv ("CADICAL_API_TRACE", path ("environment2").c_str (), 1);
     {
       Solver solver;
+      solver.set ("factor", 0);
+      solver.set ("factorcheck", 0);
       solver.add (-1);
       solver.add (-2);
       solver.add (0);
