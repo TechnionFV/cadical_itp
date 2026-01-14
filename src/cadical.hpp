@@ -771,6 +771,7 @@ public:
   int active () const;          // Number of active variables.
   int64_t redundant () const;   // Number of active redundant clauses.
   int64_t irredundant () const; // Number of active irredundant clauses.
+  int64_t conflicts () const;
 
   //------------------------------------------------------------------------
   // This function executes the given number of preprocessing rounds. It is

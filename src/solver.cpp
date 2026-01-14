@@ -1170,6 +1170,16 @@ int64_t Solver::irredundant () const {
   return res;
 }
 
+int64_t Solver::conflicts () const {
+  if (state () == DELETING)
+    return 0;
+  TRACE ("conflicts");
+  REQUIRE_VALID_OR_SOLVING_STATE ();
+  int res = internal->conflicts ();
+  LOG_API_CALL_RETURNS ("conflicts", res);
+  return res;
+}
+
 /*------------------------------------------------------------------------*/
 
 void Solver::freeze (int lit) {
