@@ -12,13 +12,13 @@
 extern "C" {
 #include <pthread.h>
 #include <unistd.h>
-};
+}
 
 using namespace std;
 using namespace CaDiCaL;
 
 static string prefix (const char *tester) {
-  string res = "/tmp/parcompwrite-";
+  string res = "/tmp/cadical-api-test-parcompwrite-";
   res += tester;
   res += "-";
   res += to_string (getpid ());
@@ -115,7 +115,11 @@ public:
     internal->opts.quiet = 1;
 #endif
   }
-  ~cadical_file_tester () { delete internal; }
+  ~cadical_file_tester () {
+    delete internal;
+    if (file)
+      delete file;
+  }
   const char *name () override { return "cadical-file"; }
   void writing () override {
     file = File::write (internal, path ());
@@ -166,6 +170,8 @@ public:
   void close () override {
     assert (file);
     file->close ();
+    delete file;
+    file = 0;
   }
 };
 
