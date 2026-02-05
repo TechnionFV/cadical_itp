@@ -2,6 +2,7 @@ add_library (cadical_src OBJECT analyze.cpp
 arena.cpp
 assume.cpp
 averages.cpp
+backbone.cpp
 backtrack.cpp
 backward.cpp
 bins.cpp
@@ -13,18 +14,24 @@ collect.cpp
 compact.cpp
 condition.cpp
 config.cpp
+congruence.cpp
 constrain.cpp
 contract.cpp
 cover.cpp
 decide.cpp
 decompose.cpp
 deduplicate.cpp
+definition.cpp
 drattracer.cpp
+drup2itptypes.cpp
+drup2itp.cpp
 elim.cpp
+elimfast.cpp
 ema.cpp
 extend.cpp
 external.cpp
 external_propagate.cpp
+factor.cpp
 file.cpp
 flags.cpp
 flip.cpp
@@ -39,7 +46,6 @@ lidruptracer.cpp
 limit.cpp
 logging.cpp
 lookahead.cpp
-lratbuilder.cpp
 lratchecker.cpp
 lrattracer.cpp
 lucky.cpp
@@ -67,17 +73,26 @@ shrink.cpp
 signal.cpp
 solution.cpp
 solver.cpp
+stable.cpp
 stats.cpp
 subsume.cpp
+sweep.cpp
 terminal.cpp
 ternary.cpp
+tier.cpp
 transred.cpp
+unstable.cpp
 util.cpp
 var.cpp
 veripbtracer.cpp
 version.cpp
 vivify.cpp
 walk.cpp
+walk_full_occs.cpp
+warmup.cpp
 watch.cpp)
+
+target_sources(cadical_src PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/kitten.c)
 
 install (FILES *.h DESTINATION include/cadical)
