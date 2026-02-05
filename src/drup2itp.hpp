@@ -167,11 +167,11 @@ public:
   Drup2Itp ();
   ~Drup2Itp ();
   void connect_internal (Internal *i) override;
-  void add_original_clause (uint64_t, bool, const vector<int> &,
+  void add_original_clause (int64_t, bool, const vector<int> &,
                             bool) override;
-  void add_derived_clause (uint64_t, bool, const vector<int> &,
-                           const vector<uint64_t> &) override;
-  void delete_clause (uint64_t, bool, const vector<int> &) override;
+  void add_derived_clause (int64_t, bool, int, const vector<int> &,
+                           const vector<int64_t> &) override;
+  void delete_clause (int64_t, bool, const vector<int> &) override;
   // void weaken_minus (uint64_t, const vector<int> &) override;
   // void strengthen (uint64_t) override;
   // void report_status (int, uint64_t) override;
@@ -179,9 +179,9 @@ public:
   void add_assumption (int) override;
   void add_constraint (const vector<int> &) override;
   void reset_assumptions () override;
-  void add_assumption_clause (uint64_t, const vector<int> &,
-                              const vector<uint64_t> &) override;
-  void conclude_unsat (ConclusionType, const vector<uint64_t> &) override;
+  void add_assumption_clause (int64_t, const vector<int> &,
+                              const vector<int64_t> &) override;
+  void conclude_unsat (ConclusionType, const vector<int64_t> &) override;
   // void conclude_sat (const vector<int> &) override;
   void print_stats () override;
   bool trim (ItpClauseIterator *, bool undo = true);

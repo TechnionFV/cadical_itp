@@ -1328,7 +1328,7 @@ void Drup2Itp::connect_internal (Internal *i) {
   external = i->external;
 }
 
-void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
+void Drup2Itp::add_original_clause (int64_t id, bool, const vector<int> &c,
                                     bool restore) {
   stats.added++;
   if (c.empty ()) {
@@ -1376,8 +1376,9 @@ void Drup2Itp::add_original_clause (uint64_t id, bool, const vector<int> &c,
   }
 }
 
-void Drup2Itp::add_derived_clause (uint64_t id, bool, const vector<int> &c,
-                                   const vector<uint64_t> &) {
+void Drup2Itp::add_derived_clause (int64_t id, bool, int,
+                                   const vector<int> &c,
+                                   const vector<int64_t> &) {
   if (c.empty ()) {
     insert (c, id);
     inconsistent = true;
@@ -1390,8 +1391,8 @@ void Drup2Itp::add_derived_clause (uint64_t id, bool, const vector<int> &c,
   }
 }
 
-void Drup2Itp::add_assumption_clause (uint64_t id, const vector<int> &c,
-                                      const vector<uint64_t> &) {
+void Drup2Itp::add_assumption_clause (int64_t id, const vector<int> &c,
+                                      const vector<int64_t> &) {
   stats.added++;
   import_clause (c);
   if (!imported_tautological) {
@@ -1401,7 +1402,7 @@ void Drup2Itp::add_assumption_clause (uint64_t id, const vector<int> &c,
   imported_clause.clear ();
 }
 
-void Drup2Itp::delete_clause (uint64_t id, bool, const vector<int> &c) {
+void Drup2Itp::delete_clause (int64_t id, bool, const vector<int> &c) {
   import_clause (c);
   if (!imported_tautological) {
     append (id, imported_clause, true /*deletion*/);
@@ -1427,7 +1428,8 @@ void Drup2Itp::reset_assumptions () {
   assumption_clauses.clear ();
 }
 
-void Drup2Itp::conclude_unsat (ConclusionType c, const vector<uint64_t> &) {
+void Drup2Itp::conclude_unsat (ConclusionType c,
+                               const vector<int64_t> &) {
   conclusion = c;
 }
 
